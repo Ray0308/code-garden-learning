@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: code-garden-learning
+    runtime: static
+    buildCommand: >-
+      mkdir -p dist/assets &&
+      cp index.html styles.css title.css answers.css app.js levels.js robots.txt dist/ &&
+      cp -r assets/* dist/assets/
+    staticPublishPath: dist
+    autoDeploy: true
+    pullRequestPreviewsEnabled: false
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: same-origin
+      - path: /*
+        name: X-Robots-Tag
+        value: noindex, nofollow, noarchive

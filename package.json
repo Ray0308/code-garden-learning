@@ -1,0 +1,7 @@
+{
+  "name": "code-garden-learning",
+  "private": true,
+  "scripts": {
+    "test": "node tests/levels.test.cjs"
+  }
+}
