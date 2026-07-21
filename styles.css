@@ -51,6 +51,20 @@
 .editor-panel{grid-template-rows:46px auto minmax(240px,1fr) 49px 105px 65px}.learning-support{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid #354036;background:#202720;color:#aab5aa;font-size:10px;line-height:1.5}.learning-support strong{flex:0 0 auto;padding:4px 8px;border:1px solid #647568;border-radius:999px;color:#cfe1ca;font:9px var(--mono);letter-spacing:.08em}.learning-support[data-mode="copy"] strong{border-color:#6684a0;color:#afd0eb}.learning-support[data-mode="fill"] strong{border-color:#9a8147;color:#e3c979}.learning-support[data-mode="debug"] strong{border-color:#a66158;color:#eda096}.learning-support[data-mode="fromScratch"] strong{border-color:#719761;color:#b8dfa8}@media(max-width:800px){.editor-panel{grid-template-rows:46px auto minmax(180px,1fr) 49px 94px 61px}.learning-support{padding:7px 10px;font-size:9px}}
 
 /* Keep controls reachable on laptops and short browser windows. */
+
+/* WORLD 2: richer judgment corridor visuals without changing the lesson path. */
+.dungeon:is([data-floor="18"],[data-floor="19"],[data-floor="20"],[data-floor="21"],[data-floor="22"],[data-floor="23"]){border-color:#66517e;background:#202629;box-shadow:0 28px 60px #050705,0 0 0 5px #17151c,0 0 30px rgba(144,100,190,.16)}
+.dungeon:is([data-floor="18"],[data-floor="19"],[data-floor="20"],[data-floor="21"],[data-floor="22"],[data-floor="23"]) .dungeon-tile{border-color:#38443d;background:linear-gradient(145deg,#29342e,#202923)}
+.dungeon:is([data-floor="18"],[data-floor="19"],[data-floor="20"],[data-floor="21"],[data-floor="22"],[data-floor="23"]) .dungeon-tile.path{background:radial-gradient(circle at 50% 45%,#36443b 0 18%,#28342d 55%,#202a24 100%);box-shadow:inset 0 0 12px rgba(118,170,127,.14)}
+.dungeon:is([data-floor="18"],[data-floor="19"],[data-floor="20"],[data-floor="21"],[data-floor="22"],[data-floor="23"]) .dungeon-tile.path:before{content:"";position:absolute;inset:5px;border:1px solid rgba(133,172,139,.1);border-radius:50%;transform:rotate(45deg)}
+.dungeon:is([data-floor="18"],[data-floor="19"],[data-floor="20"],[data-floor="21"],[data-floor="22"],[data-floor="23"]) .dungeon-tile.path-accent:after{content:"◆";position:absolute;inset:0;display:grid;place-items:center;color:rgba(171,132,205,.32);font:10px var(--mono);text-shadow:0 0 8px #b278d4}
+.dungeon:is([data-floor="18"],[data-floor="19"],[data-floor="20"],[data-floor="21"],[data-floor="22"],[data-floor="23"]) .dungeon-tile.wall:before{background:linear-gradient(145deg,#5b5549,#45483f);border-color:#30382f;box-shadow:inset 0 4px #716b5c,0 4px 7px #111612}
+.dungeon:is([data-floor="18"],[data-floor="19"],[data-floor="20"],[data-floor="21"],[data-floor="22"],[data-floor="23"]) .dungeon-tile:nth-child(3n).wall:before{inset:7px 8px 10px 5px;background:linear-gradient(155deg,#5e584b,#3e443b);transform:rotate(-1deg)}
+.dungeon-mob.unknown{padding:3px;image-rendering:pixelated;filter:brightness(.38) sepia(.35) saturate(2.4) hue-rotate(215deg) drop-shadow(0 0 2px #e0b5ff) drop-shadow(0 0 7px #9c62c5);animation:unknown-pulse 1.8s ease-in-out infinite}
+.unknown-marker{z-index:5;align-items:flex-start;justify-content:flex-end;padding:2px;pointer-events:none}
+.unknown-marker b{display:grid;place-items:center;width:18px;height:18px;border:1px solid #d7b6ef;border-radius:50%;background:#442d58;color:#f3dcff;box-shadow:0 0 9px rgba(199,139,235,.75);font:800 12px var(--mono);animation:unknown-bob 1.8s ease-in-out infinite}
+@keyframes unknown-pulse{50%{filter:brightness(.52) sepia(.25) saturate(2.7) hue-rotate(215deg) drop-shadow(0 0 3px #efd5ff) drop-shadow(0 0 10px #af6fd2)}}
+@keyframes unknown-bob{50%{transform:translateY(-3px)}}
 .workspace{min-height:0}
 @media (max-height:720px) and (min-width:801px){
   .topbar{height:60px}
