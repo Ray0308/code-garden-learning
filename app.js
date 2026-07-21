@@ -256,7 +256,7 @@ function renderDungeon() {
     image.className = `dungeon-object dungeon-mob ${revealed ? mob.type : 'unknown'}`;
     image.style.setProperty('--x', mob.x);
     image.style.setProperty('--y', mob.y);
-    image.src = revealed ? (mob.type === 'ally' ? 'assets/mob/ally/down.png' : (enemySprites.down || 'assets/mob/enemy/sheet-chroma.png')) : 'assets/player/down.png';
+    image.src = revealed ? (mob.type === 'ally' ? 'assets/mob/ally/down.png' : (enemySprites.down || 'assets/mob/enemy/sheet-chroma.png')) : 'assets/mob/ally/down.png';
     image.alt = revealed ? (mob.type === 'ally' ? '同族のフクロウ' : '敵のフクロウ') : '正体不明の影';
     if (!revealed) image.style.filter = 'brightness(0) opacity(.75)';
     dungeon.append(image);
