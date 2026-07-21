@@ -1,4 +1,6 @@
-.title-screen{background:radial-gradient(circle at 50% 42%,rgba(255,248,190,.92) 0,rgba(210,239,209,.96) 42%,#a8d5bb 100%)}
+.title-screen{overflow:hidden;padding:12px;background:radial-gradient(circle at 50% 42%,rgba(255,248,190,.92) 0,rgba(210,239,209,.96) 42%,#a8d5bb 100%)}
+.title-content{transform:scale(var(--title-scale,1));transform-origin:center;will-change:transform}
+html.title-active,html.title-active body{height:100%;overflow:hidden}
 .title-noise{opacity:.18;background-image:radial-gradient(circle,#fff 0 2px,transparent 3px),linear-gradient(90deg,transparent 49%,#8bc39d 50%,transparent 51%);background-size:54px 54px,110px 110px}
 .title-kicker{color:#397c65}.title-content h1{color:#31583f;text-shadow:0 3px 0 #fff8d7,0 10px 25px rgba(48,87,58,.2)}
 .title-hero{border-color:#d4a43f;background:radial-gradient(circle,#fffad6 0,#f1dfa0 45%,rgba(255,255,255,.25) 70%);box-shadow:0 12px 35px rgba(69,111,74,.2)}

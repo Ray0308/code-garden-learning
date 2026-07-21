@@ -4,6 +4,8 @@ const output = document.querySelector('#output');
 const lineNumbers = document.querySelector('#lineNumbers');
 const clearCard = document.querySelector('#clearCard');
 const failCard = document.querySelector('#failCard');
+const titleScreen = document.querySelector('#titleScreen');
+const titleContent = titleScreen.querySelector('.title-content');
 const GAME = { birdName: 'フォっくん', storageKey: 'code-dungeon-progress-v3' };
 const { curriculum, levels, defaultLanguage, columns: COLS, rows: ROWS } = window.CODE_GARDEN_CONTENT;
 const languageEngine = window.CODE_GARDEN_ENGINES?.[defaultLanguage];
@@ -26,6 +28,19 @@ let pendingInsert = '';
 let enemySprites = {};
 let adventurePassword = '';
 let currentHintIndex = 0;
+let titleFitFrame = 0;
+
+function fitTitleToViewport() {
+  cancelAnimationFrame(titleFitFrame);
+  titleFitFrame = requestAnimationFrame(() => {
+    titleContent.style.setProperty('--title-scale', '1');
+    const viewport = window.visualViewport;
+    const availableWidth = (viewport?.width || window.innerWidth) - 24;
+    const availableHeight = (viewport?.height || window.innerHeight) - 24;
+    const scale = Math.min(1, availableWidth / titleContent.scrollWidth, availableHeight / titleContent.scrollHeight);
+    titleContent.style.setProperty('--title-scale', String(Math.max(.5, scale)));
+  });
+}
 
 function level() { return levels[currentFloor]; }
 function progressKey() { return `${GAME.storageKey}:${defaultLanguage}`; }
@@ -114,7 +129,8 @@ function selectFloor(floor, bypassUnlock = false) {
   document.querySelector('#missionDescription').textContent = level().description;
   document.querySelector('#goalState').previousElementSibling.textContent = level().goal;
   editor.value = selectedLevel.support.initialCode ?? selectedLevel.starter;
-  document.querySelector('#titleScreen').classList.add('hidden');
+  titleScreen.classList.add('hidden');
+  document.documentElement.classList.remove('title-active');
   document.querySelector('#missionReviewFloor').textContent = floor === 0 ? 'TUTORIAL' : `FLOOR ${String(floor).padStart(2, '0')}`;
   document.querySelector('#missionReviewTitle').textContent = level().mission;
   document.querySelector('#missionReviewDescription').textContent = level().description;
@@ -608,7 +624,9 @@ document.querySelector('#againBtn').addEventListener('click', () => {
   if (followingFloor !== undefined && loadProgress().cleared.includes(currentFloor)) selectFloor(followingFloor);
   else {
     clearCard.classList.remove('show');
-    document.querySelector('#titleScreen').classList.remove('hidden');
+    titleScreen.classList.remove('hidden');
+    document.documentElement.classList.add('title-active');
+    fitTitleToViewport();
   }
 });
 document.querySelector('#retryBtn').onclick = retryLevel;
@@ -675,3 +693,8 @@ function prepareEnemySprites() {
 updateLineNumbers();
 resetState(false);
 prepareEnemySprites();
+document.documentElement.classList.add('title-active');
+fitTitleToViewport();
+window.addEventListener('resize', fitTitleToViewport);
+window.visualViewport?.addEventListener('resize', fitTitleToViewport);
+new ResizeObserver(fitTitleToViewport).observe(titleContent);
