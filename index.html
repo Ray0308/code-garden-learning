@@ -71,14 +71,14 @@
       <button type="button" data-mobile-view="guide">ミッション</button>
     </nav>
     <main class="workspace" data-active-mobile-view="editor">
-      <aside class="brief-panel ide-sidebar" id="ideSidebar" data-view-panel="guide">
+      <aside class="brief-panel ide-sidebar collapsed" id="ideSidebar" data-view-panel="guide">
         <nav class="activity-bar" aria-label="サイドバー">
           <button class="activity-button" type="button" data-sidebar-pane="explorer" aria-label="エクスプローラー" title="エクスプローラー">▱</button>
           <button class="activity-button" type="button" data-sidebar-pane="mission" aria-label="ミッション" title="ミッション">◆</button>
           <button class="activity-button active" type="button" data-sidebar-pane="functions" aria-label="使える関数" title="使える関数">ƒ</button>
           <button class="activity-button" type="button" data-sidebar-pane="help" aria-label="ヘルプ" title="ヘルプ">?</button>
         </nav>
-        <div class="side-panel" id="sidePanel">
+        <div class="side-panel" id="sidePanel" aria-hidden="true">
           <section class="sidebar-pane" data-pane="explorer" hidden>
             <header class="sidebar-heading"><span>EXPLORER</span><button type="button" data-close-sidebar aria-label="閉じる">×</button></header>
             <div class="explorer-section"><b>CODE DUNGEON</b><button type="button" class="explorer-file active"><span>Py</span> main.py</button></div>

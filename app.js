@@ -616,6 +616,12 @@ document.querySelectorAll('[data-close-sidebar]').forEach(button => button.addEv
   sidePanel.setAttribute('aria-hidden', 'true');
   activityButtons.forEach(item => item.classList.remove('active'));
 }));
+document.addEventListener('pointerdown', event => {
+  if (window.matchMedia('(max-width: 800px)').matches || sidebar.classList.contains('collapsed') || sidebar.contains(event.target)) return;
+  sidebar.classList.add('collapsed');
+  sidePanel.setAttribute('aria-hidden', 'true');
+  activityButtons.forEach(item => item.classList.remove('active'));
+});
 document.querySelector('#runBtn').addEventListener('click', runAll);
 document.querySelector('#stepBtn').addEventListener('click', runStep);
 document.querySelector('#resetBtn').addEventListener('click', () => resetState());
