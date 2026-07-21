@@ -97,16 +97,13 @@ function simulate(floor, mobTypes = []) {
   return state.steps;
 }
 
-for (let floor = 0; floor <= 5; floor++) console.log(`✓ ${floor}階層 ${levels[floor].title}: ${simulate(floor)}ステップ`);
-for (let mask = 0; mask < 8; mask++) {
-  const types = [0, 1, 2].map(bit => mask & (1 << bit) ? 'enemy' : 'ally');
-  simulate(6, types);
-}
-console.log('✓ 6階層 魔物の全8パターン');
+for (const floor of Object.keys(levels).map(Number)) console.log(`✓ ${floor}階層 ${levels[floor].title}: ${simulate(floor)}ステップ`);
 
 assert.equal(Object.keys(solutions).length, Object.keys(levels).length, '模範解答と階層数が一致しません');
 assert.equal(curriculum.length, Object.keys(levels).length, '教材一覧と階層数が一致しません');
 assert.ok(curriculum.every(item => item.language && item.minutes), '言語と学習時間の教材メタデータが必要です');
+assert.deepEqual(curriculum.slice(0, 4).map(item => item.stage), [1, 2, 3, 4], '第1章は4ステージを順番に実装します');
+assert.deepEqual(curriculum.slice(0, 4).map(item => levels[item.floor].support.mode), ['copy', 'fill', 'debug', 'fromScratch'], '第1章は段階的に支援を減らします');
 assert.ok(Object.values(levels).every(item => Array.isArray(item.capabilities)), '各ステージに使用可能な技の定義が必要です');
 assert.ok(Object.values(levels).every(item => item.support?.mode && item.support?.instruction), '各ステージに学習支援モードと案内が必要です');
 assert.ok(Object.values(levels).every(item => ['copy', 'fill', 'debug', 'fromScratch'].includes(item.support.mode)), '学習支援モードが不正です');
