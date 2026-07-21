@@ -209,7 +209,12 @@ function renderDungeon() {
       tile.style.setProperty('--x', x);
       tile.style.setProperty('--y', y);
       if ((x + y) % 4 === 0) tile.classList.add('moss');
-      if (level().obstacles.includes(`${x},${y}`)) tile.classList.add('wall');
+      if (level().obstacles.includes(`${x},${y}`)) {
+        tile.classList.add('wall');
+      } else {
+        tile.classList.add('path');
+        if (currentFloor >= 18 && currentFloor <= 23 && (x * 3 + y) % 3 === 1) tile.classList.add('path-accent');
+      }
       dungeon.append(tile);
     }
   }
@@ -258,8 +263,16 @@ function renderDungeon() {
     image.style.setProperty('--y', mob.y);
     image.src = revealed ? (mob.type === 'ally' ? 'assets/mob/ally/down.png' : (enemySprites.down || 'assets/mob/enemy/sheet-chroma.png')) : 'assets/mob/ally/down.png';
     image.alt = revealed ? (mob.type === 'ally' ? '同族のフクロウ' : '敵のフクロウ') : '正体不明の影';
-    if (!revealed) image.style.filter = 'brightness(0) opacity(.75)';
     dungeon.append(image);
+    if (!revealed) {
+      const marker = document.createElement('span');
+      marker.className = 'dungeon-object unknown-marker';
+      marker.style.setProperty('--x', mob.x);
+      marker.style.setProperty('--y', mob.y);
+      marker.innerHTML = '<b>?</b>';
+      marker.setAttribute('aria-hidden', 'true');
+      dungeon.append(marker);
+    }
   });
 
   const hero = document.createElement('img');
