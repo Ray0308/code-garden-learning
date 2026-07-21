@@ -293,8 +293,8 @@ function setOutput(mark, message, type = '') {
 function showClear() {
   const lesson = curriculum.find(item => item.floor === currentFloor);
   const isFinalFloor = nextFloor(currentFloor) === undefined;
-  document.querySelector('#clearLabel').textContent = isFinalFloor ? 'WORLD COMPLETE' : 'QUEST COMPLETE';
-  document.querySelector('#clearTitle').textContent = isFinalFloor ? '最初の世界を踏破した！' : `${level().title}を踏破した！`;
+  document.querySelector('#clearLabel').textContent = isFinalFloor ? `WORLD ${lesson?.world || 1} COMPLETE` : 'QUEST COMPLETE';
+  document.querySelector('#clearTitle').textContent = isFinalFloor ? `WORLD ${lesson?.world || 1}を踏破した！` : `${level().title}を踏破した！`;
   document.querySelector('#clearLesson').textContent = `今回覚えたこと：${lesson?.topic || level().goal}`;
   document.querySelector('#clearSyntax').textContent = lesson?.syntax || '';
   document.querySelector('#againBtn').textContent = isFinalFloor ? 'タイトルへ戻る' : '次の階層へ';

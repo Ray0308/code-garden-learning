@@ -95,7 +95,12 @@ function simulate(floor, mobTypes = []) {
       } else assert.fail(`${floor}階層: 未対応の命令 ${command.type}`);
     }
   }
-  run(compile(solutions[floor]));
+  const parsed = pythonEngine.compile(solutions[floor], { capabilities: level.capabilities, level });
+  assert.deepEqual(parsed.errors, [], `${floor}階層: Pythonエンジンで模範解答を解釈できません`);
+  const normalize = command => command.command === 'conditional'
+    ? { type: 'if', variable: command.variable, expected: command.expected, yes: command.thenCommands.map(normalize), no: command.elseCommands.map(normalize) }
+    : { ...command, type: command.command };
+  run(parsed.commands.map(normalize));
   assert.equal(state.cleared, true, `${floor}階層: 模範解答でクリアできません`);
   return state.steps;
 }
