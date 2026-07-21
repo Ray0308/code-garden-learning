@@ -7,6 +7,8 @@ PC版Chromeとスマートフォン版Chromeを対象にしています。スマ
 ## 構成
 
 - `levels.js`: 言語、章、所要時間、マップ、ミッションなどの教材データ
+- `engines/`: 言語ごとの構文解析と初心者向けエラー整形
+- `docs/WORLD_1_CURRICULUM.md`: 第1ワール12ステージの実装計画
 - `app.js`: Python風コードの解釈、ゲーム状態、画面制御
 - `index.html` / `styles.css`: PC・スマートフォン共通UI
 - `tests/`: 模範解答とレベル回帰テスト

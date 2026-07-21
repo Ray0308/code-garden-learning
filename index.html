@@ -133,6 +133,12 @@
           <div class="file-tab"><span>●</span> main.py</div>
           <div class="editor-state"><i></i><span id="editorState">入力待ち</span></div>
         </div>
+        <div class="learning-support" id="learningSupport" data-mode="copy">
+          <strong id="supportModeLabel">写経</strong>
+          <span id="supportInstruction">お手本と同じ命令を手で入力しよう。</span>
+          <button type="button" id="hintBtn">ヒント</button>
+          <pre id="supportExample" hidden><small>お手本</small><code id="supportExampleCode"></code></pre>
+        </div>
         <div class="editor-wrap">
           <div class="line-numbers" id="lineNumbers">1<br>2<br>3<br>4<br>5<br>6<br>7<br>8<br>9<br>10<br>11<br>12</div>
           <textarea id="codeEditor" aria-label="Pythonコードエディター" spellcheck="false" autocomplete="off" autocapitalize="off"># 灯の場所まで進もう
@@ -185,6 +191,7 @@ action()</textarea>
     </main>
   </div>
   <script src="levels.js?v=20260720-1"></script>
+  <script src="engines/python.js?v=20260721-1"></script>
   <script src="app.js?v=20260720-10"></script>
 </body>
 </html>

@@ -4,8 +4,12 @@ const output = document.querySelector('#output');
 const lineNumbers = document.querySelector('#lineNumbers');
 const clearCard = document.querySelector('#clearCard');
 const failCard = document.querySelector('#failCard');
-const GAME = { birdName: 'フォっくん', storageKey: 'code-dungeon-progress-v1' };
-const { curriculum, levels, columns: COLS, rows: ROWS } = window.CODE_GARDEN_CONTENT;
+const GAME = { birdName: 'フォっくん', storageKey: 'code-dungeon-progress-v2' };
+const { curriculum, levels, defaultLanguage, columns: COLS, rows: ROWS } = window.CODE_GARDEN_CONTENT;
+const languageEngine = window.CODE_GARDEN_ENGINES?.[defaultLanguage];
+if (!languageEngine) throw new Error(`Language engine is not registered: ${defaultLanguage}`);
+const stageOrder = curriculum.map(item => item.floor).filter(floor => levels[floor]);
+const supportLabels = { copy: '写経', fill: '穴埋め', debug: 'エラー修正', fromScratch: '自力入力' };
 const directions = [
   { dx: 0, dy: 1, label: '下', sprite: 'assets/character/main-down.png' },
   { dx: 1, dy: 0, label: '右', sprite: 'assets/character/main-right.png' },
@@ -21,42 +25,99 @@ let currentFloor = 1;
 let pendingInsert = '';
 let enemySprites = {};
 let adventurePassword = '';
+let currentHintIndex = 0;
 
 function level() { return levels[currentFloor]; }
+function progressKey() { return `${GAME.storageKey}:${defaultLanguage}`; }
+function nextFloor(floor) {
+  const index = stageOrder.indexOf(floor);
+  return index >= 0 ? stageOrder[index + 1] : undefined;
+}
 
 function loadProgress() {
-  try { return JSON.parse(localStorage.getItem(GAME.storageKey)) || { cleared: [], lastFloor: 0 }; }
-  catch { return { cleared: [], lastFloor: 0 }; }
+  try {
+    const saved = localStorage.getItem(progressKey());
+    if (saved) return JSON.parse(saved);
+    const legacy = localStorage.getItem('code-dungeon-progress-v1');
+    if (legacy) {
+      const migrated = { ...JSON.parse(legacy), language: defaultLanguage };
+      localStorage.setItem(progressKey(), JSON.stringify(migrated));
+      return migrated;
+    }
+    return { language: defaultLanguage, cleared: [], lastFloor: stageOrder[0] };
+  }
+  catch { return { language: defaultLanguage, cleared: [], lastFloor: stageOrder[0] }; }
 }
 
 function saveProgress(floor) {
   const progress = loadProgress();
   if (!progress.cleared.includes(floor)) progress.cleared.push(floor);
-  progress.lastFloor = Math.min(floor + 1, Math.max(...Object.keys(levels).map(Number)));
+  progress.masteredSkills = [...new Set([...(progress.masteredSkills || []), ...level().capabilities])];
+  progress.lastFloor = nextFloor(floor) ?? floor;
   progress.updatedAt = new Date().toISOString();
-  localStorage.setItem(GAME.storageKey, JSON.stringify(progress));
+  progress.language = defaultLanguage;
+  localStorage.setItem(progressKey(), JSON.stringify(progress));
+}
+
+function recordAttempt() {
+  const progress = loadProgress();
+  progress.attempts = progress.attempts || {};
+  progress.attempts[currentFloor] = (progress.attempts[currentFloor] || 0) + 1;
+  progress.language = defaultLanguage;
+  progress.updatedAt = new Date().toISOString();
+  localStorage.setItem(progressKey(), JSON.stringify(progress));
+}
+
+function showNextHint() {
+  const hints = level().support.hints || [];
+  if (currentHintIndex >= hints.length) return;
+  const hintNumber = currentHintIndex + 1;
+  setOutput('?', `ヒント ${hintNumber}/${hints.length}: ${hints[currentHintIndex]}`, 'warning');
+  currentHintIndex++;
+  const progress = loadProgress();
+  progress.hintsUsed = progress.hintsUsed || {};
+  progress.hintsUsed[currentFloor] = Math.max(progress.hintsUsed[currentFloor] || 0, currentHintIndex);
+  progress.language = defaultLanguage;
+  progress.updatedAt = new Date().toISOString();
+  localStorage.setItem(progressKey(), JSON.stringify(progress));
+  const hintButton = document.querySelector('#hintBtn');
+  hintButton.disabled = currentHintIndex >= hints.length;
+  hintButton.textContent = hintButton.disabled ? 'ヒント表示済み' : '次のヒント';
+}
+
+function prepareLevel(selectedLevel) {
+  if (selectedLevel.setup?.type === 'adventurePassword') selectedLevel.door.password = adventurePassword;
+  if (selectedLevel.setup?.type === 'randomMobs') selectedLevel.mobs = selectedLevel.setup.positions
+    .map(mob => ({ ...mob, type: Math.random() < 0.5 ? 'enemy' : 'ally' }));
 }
 
 function selectFloor(floor, bypassUnlock = false) {
   if (!levels[floor]) return;
   const progress = loadProgress();
-  if (!bypassUnlock && floor > 1 && !progress.cleared.includes(floor - 1)) return;
+  const selectedLevel = levels[floor];
+  if (!bypassUnlock && selectedLevel.prerequisite !== null && !progress.cleared.includes(selectedLevel.prerequisite)) return;
   currentFloor = floor;
-  if (floor === 5) level().door.password = adventurePassword;
-  if (floor === 6) level().mobs = [{ x: 1, y: 7 }, { x: 3, y: 6 }, { x: 5, y: 4 }]
-    .map(mob => ({ ...mob, type: Math.random() < 0.5 ? 'enemy' : 'ally' }));
+  prepareLevel(selectedLevel);
   document.querySelector('.chapter small').textContent = `CHAPTER ${String(floor).padStart(2, '0')}`;
   document.querySelector('.chapter strong').textContent = level().title;
-  document.querySelector('#loopReference').hidden = floor < 4;
-  document.querySelector('#printReference').hidden = floor < 3;
-  document.querySelector('#inputReference').hidden = floor < 5;
-  document.querySelector('#attackReference').hidden = floor < 2;
-  document.querySelector('#sayHelloReference').hidden = floor < 2;
-  document.querySelector('#ifReference').hidden = floor < 6;
+  document.querySelector('#loopReference').hidden = !selectedLevel.capabilities.includes('for');
+  document.querySelector('#printReference').hidden = !selectedLevel.capabilities.includes('print');
+  document.querySelector('#inputReference').hidden = !selectedLevel.capabilities.includes('input');
+  document.querySelector('#attackReference').hidden = !selectedLevel.capabilities.includes('attack');
+  document.querySelector('#sayHelloReference').hidden = !selectedLevel.capabilities.includes('sayHello');
+  document.querySelector('#ifReference').hidden = !selectedLevel.capabilities.includes('if');
+  document.querySelector('#learningSupport').dataset.mode = selectedLevel.support.mode;
+  document.querySelector('#supportModeLabel').textContent = supportLabels[selectedLevel.support.mode];
+  document.querySelector('#supportInstruction').textContent = selectedLevel.support.instruction;
+  currentHintIndex = 0;
+  document.querySelector('#hintBtn').disabled = !selectedLevel.support.hints?.length;
+  document.querySelector('#hintBtn').textContent = 'ヒント';
+  document.querySelector('#supportExample').hidden = !selectedLevel.support.example;
+  document.querySelector('#supportExampleCode').textContent = selectedLevel.support.example || '';
   document.querySelector('#missionTitle').textContent = level().mission;
   document.querySelector('#missionDescription').textContent = level().description;
   document.querySelector('#goalState').previousElementSibling.textContent = level().goal;
-  editor.value = level().starter;
+  editor.value = selectedLevel.support.initialCode ?? selectedLevel.starter;
   document.querySelector('#titleScreen').classList.add('hidden');
   const lesson = curriculum.find(item => item.floor === floor);
   document.querySelector('#missionReviewFloor').textContent = floor === 0 ? 'TUTORIAL' : `FLOOR ${String(floor).padStart(2, '0')}`;
@@ -134,68 +195,11 @@ function incompleteMessage() {
 }
 
 function parseErrorMessage(error) {
-  const guidance = /インデント|必要です|使えるよう|range\(\)/.test(error.text);
-  return `${error.line}行目: ${guidance ? error.text : `「${error.text}」は使えない命令です`}`;
+  return languageEngine.formatError(error);
 }
 
 function parseCode() {
-  const valid = new Set(['move()', 'turnLeft()', 'turnRight()', 'action()', 'attack()', 'sayHello()']);
-  const errors = [];
-  const lines = editor.value.split('\n').map(raw => raw.replace(/\t/g, '    '));
-
-  function parseBlock(startIndex, indent) {
-    const commands = [];
-    let index = startIndex;
-    while (index < lines.length) {
-      const raw = lines[index];
-      const text = raw.trim();
-      if (!text || text.startsWith('#')) { index++; continue; }
-      const spaces = raw.length - raw.trimStart().length;
-      if (spaces < indent || (indent > 0 && spaces === indent - 4 && text === 'else:')) break;
-      if (spaces > indent) { errors.push({ line: index + 1, text: 'インデントが多すぎます' }); index++; continue; }
-
-      const loop = text.match(/^for\s+_\s+in\s+range\((\d+)\):$/);
-      if (loop) {
-        if (currentFloor < 4) errors.push({ line: index + 1, text: 'for は4階層で使えるようになります' });
-        const parsed = parseBlock(index + 1, indent + 4);
-        const repeat = Number(loop[1]);
-        if (!parsed.commands.length) errors.push({ line: index + 1, text: 'for の中にインデントした命令が必要です' });
-        if (repeat < 1 || repeat > 10) errors.push({ line: index + 1, text: 'range() は1〜10にしてください' });
-        else for (let count = 0; count < repeat; count++) commands.push(...parsed.commands);
-        index = parsed.index;
-        continue;
-      }
-
-      const condition = text.match(/^if\s+([A-Za-z_]\w*)\s*==\s*(['"])(.*?)\2:$/);
-      if (condition) {
-        if (currentFloor < 6) errors.push({ line: index + 1, text: 'if は6階層で使えるようになります' });
-        const thenBlock = parseBlock(index + 1, indent + 4);
-        index = thenBlock.index;
-        let elseCommands = [];
-        if (index < lines.length && lines[index].trim() === 'else:' && lines[index].length - lines[index].trimStart().length === indent) {
-          const elseBlock = parseBlock(index + 1, indent + 4);
-          elseCommands = elseBlock.commands;
-          index = elseBlock.index;
-        } else errors.push({ line: index + 1, text: 'if に対応する else: が必要です' });
-        commands.push({ command: 'conditional', line: index + 1, variable: condition[1], expected: condition[3], thenCommands: thenBlock.commands, elseCommands });
-        continue;
-      }
-
-      const input = text.match(/^([A-Za-z_]\w*)\s*=\s*input\(\s*\)$/);
-      if (input && currentFloor < 5) errors.push({ line: index + 1, text: 'input は5階層で使えるようになります' });
-      if (input) { commands.push({ command: 'input', variable: input[1], line: index + 1 }); index++; continue; }
-      const print = text.match(/^print\((.+)\)$/);
-      if (print && currentFloor < 3) errors.push({ line: index + 1, text: 'print は3階層で使えるようになります' });
-      if (print) { commands.push({ command: 'print', value: print[1].trim(), line: index + 1 }); index++; continue; }
-      if (text === 'attack()' && currentFloor < 2) errors.push({ line: index + 1, text: 'attack は2階層で使えるようになります' });
-      else if (text === 'sayHello()' && currentFloor < 2) errors.push({ line: index + 1, text: 'sayHello は2階層で使えるようになります' });
-      else if (valid.has(text)) commands.push({ command: text, line: index + 1 });
-      else errors.push({ line: index + 1, text });
-      index++;
-    }
-    return { commands, index };
-  }
-  return { commands: parseBlock(0, 0).commands, errors };
+  return languageEngine.compile(editor.value, { capabilities: level().capabilities, level: level() });
 }
 
 function renderDungeon() {
@@ -290,7 +294,7 @@ function setOutput(mark, message, type = '') {
 
 function showClear() {
   const lesson = curriculum.find(item => item.floor === currentFloor);
-  const isFinalFloor = currentFloor === Math.max(...Object.keys(levels).map(Number));
+  const isFinalFloor = nextFloor(currentFloor) === undefined;
   document.querySelector('#clearLabel').textContent = isFinalFloor ? 'WORLD COMPLETE' : 'QUEST COMPLETE';
   document.querySelector('#clearTitle').textContent = isFinalFloor ? '最初の世界を踏破した！' : `${level().title}を踏破した！`;
   document.querySelector('#clearLesson').textContent = `今回覚えたこと：${lesson?.topic || level().goal}`;
@@ -421,6 +425,7 @@ async function execute(commandInfo) {
 
 async function runAll() {
   if (running) return;
+  recordAttempt();
   const parsed = parseCode();
   if (parsed.errors.length) {
     const error = parsed.errors[0];
@@ -457,6 +462,7 @@ async function runAll() {
 async function runStep() {
   if (running) return;
   if (executionIndex === 0) {
+    recordAttempt();
     const parsed = parseCode();
     if (parsed.errors.length) {
       const error = parsed.errors[0];
@@ -584,8 +590,8 @@ document.querySelector('#runBtn').addEventListener('click', runAll);
 document.querySelector('#stepBtn').addEventListener('click', runStep);
 document.querySelector('#resetBtn').addEventListener('click', () => resetState());
 document.querySelector('#againBtn').addEventListener('click', () => {
-  const lastFloor = Math.max(...Object.keys(levels).map(Number));
-  if (currentFloor < lastFloor && loadProgress().cleared.includes(currentFloor)) selectFloor(currentFloor + 1);
+  const followingFloor = nextFloor(currentFloor);
+  if (followingFloor !== undefined && loadProgress().cleared.includes(currentFloor)) selectFloor(followingFloor);
   else {
     clearCard.classList.remove('show');
     document.querySelector('#titleScreen').classList.remove('hidden');
@@ -593,6 +599,7 @@ document.querySelector('#againBtn').addEventListener('click', () => {
 });
 document.querySelector('#retryBtn').onclick = retryLevel;
 document.querySelector('#clearOutput').addEventListener('click', () => setOutput('›', '出力を消去しました'));
+document.querySelector('#hintBtn').addEventListener('click', showNextHint);
 document.querySelector('#birdNameTitle').textContent = GAME.birdName;
 document.querySelector('#continueAdventure').hidden = loadProgress().cleared.length === 0;
 document.querySelector('#startTutorial').addEventListener('click', () => startAdventure(0));
