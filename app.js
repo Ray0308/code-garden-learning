@@ -4,7 +4,7 @@ const output = document.querySelector('#output');
 const lineNumbers = document.querySelector('#lineNumbers');
 const clearCard = document.querySelector('#clearCard');
 const failCard = document.querySelector('#failCard');
-const GAME = { birdName: 'フォっくん', storageKey: 'code-dungeon-progress-v2' };
+const GAME = { birdName: 'フォっくん', storageKey: 'code-dungeon-progress-v3' };
 const { curriculum, levels, defaultLanguage, columns: COLS, rows: ROWS } = window.CODE_GARDEN_CONTENT;
 const languageEngine = window.CODE_GARDEN_ENGINES?.[defaultLanguage];
 if (!languageEngine) throw new Error(`Language engine is not registered: ${defaultLanguage}`);
@@ -38,12 +38,6 @@ function loadProgress() {
   try {
     const saved = localStorage.getItem(progressKey());
     if (saved) return JSON.parse(saved);
-    const legacy = localStorage.getItem('code-dungeon-progress-v1');
-    if (legacy) {
-      const migrated = { ...JSON.parse(legacy), language: defaultLanguage };
-      localStorage.setItem(progressKey(), JSON.stringify(migrated));
-      return migrated;
-    }
     return { language: defaultLanguage, cleared: [], lastFloor: stageOrder[0] };
   }
   catch { return { language: defaultLanguage, cleared: [], lastFloor: stageOrder[0] }; }
@@ -98,7 +92,9 @@ function selectFloor(floor, bypassUnlock = false) {
   if (!bypassUnlock && selectedLevel.prerequisite !== null && !progress.cleared.includes(selectedLevel.prerequisite)) return;
   currentFloor = floor;
   prepareLevel(selectedLevel);
-  document.querySelector('.chapter small').textContent = `CHAPTER ${String(floor).padStart(2, '0')}`;
+  const lesson = curriculum.find(item => item.floor === floor);
+  const stageLabel = lesson?.stage ? `${lesson.chapter}-${lesson.stage}` : String(floor).padStart(2, '0');
+  document.querySelector('.chapter small').textContent = `WORLD ${lesson?.world || 1} / STAGE ${stageLabel}`;
   document.querySelector('.chapter strong').textContent = level().title;
   document.querySelector('#loopReference').hidden = !selectedLevel.capabilities.includes('for');
   document.querySelector('#printReference').hidden = !selectedLevel.capabilities.includes('print');
@@ -119,7 +115,6 @@ function selectFloor(floor, bypassUnlock = false) {
   document.querySelector('#goalState').previousElementSibling.textContent = level().goal;
   editor.value = selectedLevel.support.initialCode ?? selectedLevel.starter;
   document.querySelector('#titleScreen').classList.add('hidden');
-  const lesson = curriculum.find(item => item.floor === floor);
   document.querySelector('#missionReviewFloor').textContent = floor === 0 ? 'TUTORIAL' : `FLOOR ${String(floor).padStart(2, '0')}`;
   document.querySelector('#missionReviewTitle').textContent = level().mission;
   document.querySelector('#missionReviewDescription').textContent = level().description;
