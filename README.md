@@ -24,3 +24,9 @@ node --check levels.js
 ```
 
 ブラウザ確認は、このフォルダで任意の静的HTTPサーバーを起動して `index.html` を開きます。
+
+## GitHub接続のセットアップ（Windows）
+
+`setup-github-access.bat` をダブルクリックすると、Git・GitHub CLIの検出、ログイン、認証設定、接続確認を半自動で行います。ログイン済みなら再認証は省略されます。
+
+認証情報をCodexの隔離プロセスからも利用できるよう、初回ログイン時はGitHub CLIのファイル保存方式を使用します。共用PCでは実行しないでください。

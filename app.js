@@ -82,7 +82,7 @@ function showNextHint() {
 function prepareLevel(selectedLevel) {
   if (selectedLevel.setup?.type === 'adventurePassword') selectedLevel.door.password = adventurePassword;
   if (selectedLevel.setup?.type === 'randomMobs') selectedLevel.mobs = selectedLevel.setup.positions
-    .map(mob => ({ ...mob, type: Math.random() < 0.5 ? 'enemy' : 'ally' }));
+    .map(mob => ({ ...mob, type: null }));
 }
 
 function selectFloor(floor, bypassUnlock = false) {
@@ -149,6 +149,7 @@ function createAdventurePassword() {
 }
 
 function resetState(showMessage = true) {
+  prepareLevel(level());
   clearCard.classList.remove('show');
   failCard.classList.remove('show');
   state = { ...level().start, collected: 0, cleared: false, doorOpen: false, steps: 0, variables: {}, resolvedMobs: [], inspectedMobs: [] };
@@ -250,8 +251,7 @@ function renderDungeon() {
 
   (level().mobs || []).forEach((mob, index) => {
     if (state.resolvedMobs.includes(index)) return;
-    const front = frontPosition();
-    const revealed = level().setup?.type !== 'randomMobs' || state.inspectedMobs.includes(index) || (front.x === mob.x && front.y === mob.y);
+    const revealed = level().setup?.type !== 'randomMobs' || state.inspectedMobs.includes(index);
     const image = document.createElement('img');
     image.className = `dungeon-object dungeon-mob ${revealed ? mob.type : 'unknown'}`;
     image.style.setProperty('--x', mob.x);
@@ -293,8 +293,8 @@ function setOutput(mark, message, type = '') {
 function showClear() {
   const lesson = curriculum.find(item => item.floor === currentFloor);
   const isFinalFloor = nextFloor(currentFloor) === undefined;
-  document.querySelector('#clearLabel').textContent = isFinalFloor ? 'WORLD COMPLETE' : 'QUEST COMPLETE';
-  document.querySelector('#clearTitle').textContent = isFinalFloor ? '最初の世界を踏破した！' : `${level().title}を踏破した！`;
+  document.querySelector('#clearLabel').textContent = isFinalFloor ? `WORLD ${lesson?.world || 1} COMPLETE` : 'QUEST COMPLETE';
+  document.querySelector('#clearTitle').textContent = isFinalFloor ? `WORLD ${lesson?.world || 1}を踏破した！` : `${level().title}を踏破した！`;
   document.querySelector('#clearLesson').textContent = `今回覚えたこと：${lesson?.topic || level().goal}`;
   document.querySelector('#clearSyntax').textContent = lesson?.syntax || '';
   document.querySelector('#againBtn').textContent = isFinalFloor ? 'タイトルへ戻る' : '次の階層へ';
@@ -379,7 +379,9 @@ async function execute(commandInfo) {
       level().door.password = adventurePassword;
       setOutput('›', `門番から受け取った文字列を ${commandInfo.variable} に保存しました`);
     } else if (mobIndex >= 0 && !state.resolvedMobs.includes(mobIndex)) {
-      state.variables[commandInfo.variable] = level().mobs[mobIndex].type;
+      const mob = level().mobs[mobIndex];
+      if (level().setup?.type === 'randomMobs' && !mob.type) mob.type = Math.random() < 0.5 ? 'enemy' : 'ally';
+      state.variables[commandInfo.variable] = mob.type;
       if (!state.inspectedMobs.includes(mobIndex)) state.inspectedMobs.push(mobIndex);
       setOutput('›', `MOBの種類を ${commandInfo.variable} に保存しました`);
     } else {

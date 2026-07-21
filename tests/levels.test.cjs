@@ -50,7 +50,7 @@ function simulate(floor, mobTypes = []) {
   const level = structuredClone(levels[floor]);
   if (level.setup?.type === 'adventurePassword') level.door.password = 'TEST-PASSWORD';
   if (level.setup?.type === 'randomMobs') level.mobs = level.setup.positions
-    .map((mob, index) => ({ ...mob, type: mobTypes[index] }));
+    .map((mob, index) => ({ ...mob, type: mobTypes[index] || 'ally' }));
   const state = { ...level.start, steps: 0, collected: false, doorOpen: false, variables: {}, resolved: new Set(), cleared: false };
   const front = () => ({ x: state.x + vectors[state.direction].dx, y: state.y + vectors[state.direction].dy });
   const frontIndex = objects => objects.findIndex((object, index) => object.x === front().x && object.y === front().y && !state.resolved.has(index));
@@ -95,7 +95,12 @@ function simulate(floor, mobTypes = []) {
       } else assert.fail(`${floor}階層: 未対応の命令 ${command.type}`);
     }
   }
-  run(compile(solutions[floor]));
+  const parsed = pythonEngine.compile(solutions[floor], { capabilities: level.capabilities, level });
+  assert.deepEqual(parsed.errors, [], `${floor}階層: Pythonエンジンで模範解答を解釈できません`);
+  const normalize = command => command.command === 'conditional'
+    ? { type: 'if', variable: command.variable, expected: command.expected, yes: command.thenCommands.map(normalize), no: command.elseCommands.map(normalize) }
+    : { ...command, type: command.command };
+  run(parsed.commands.map(normalize));
   assert.equal(state.cleared, true, `${floor}階層: 模範解答でクリアできません`);
   return state.steps;
 }
@@ -111,6 +116,9 @@ assert.equal(Object.keys(solutions).length, Object.keys(levels).length, '模範�
 assert.equal(curriculum.length, Object.keys(levels).length, '教材一覧と階層数が一致しません');
 assert.equal(curriculum.length, 24, '全24ステージを実装します');
 assert.ok(Object.values(levels).filter(item => item.setup?.type === 'randomMobs').every(item => item.setup.positions.length === 3), '条件分岐ステージはランダムMOB3体で構成します');
+assert.match(appSource, /type: null/, 'ランダムMOBはステージ開始時点では種類を未確定にします');
+assert.match(appSource, /!mob\.type\) mob\.type = Math\.random\(\)/, 'input()実行時にMOBの種類を初めて決定します');
+assert.doesNotMatch(appSource, /front\.x === mob\.x && front\.y === mob\.y/, '正面へ到達しただけではMOBの正体を表示しません');
 assert.ok(curriculum.every(item => item.language && item.minutes), '言語と学習時間の教材メタデータが必要です');
 assert.deepEqual(curriculum.slice(0, 4).map(item => item.stage), [1, 2, 3, 4], '第1章は4ステージを順番に実装します');
 assert.deepEqual(curriculum.slice(0, 4).map(item => levels[item.floor].support.mode), ['copy', 'fill', 'debug', 'fromScratch'], '第1章は段階的に支援を減らします');

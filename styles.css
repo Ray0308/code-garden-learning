@@ -49,5 +49,19 @@
 @media(max-width:420px){.brand-rune{width:32px;height:32px}.top-actions{gap:4px}.ghost-button{padding:7px 9px}.editor-wrap textarea{font-size:13px;line-height:27px;padding:15px 12px}.line-numbers{font-size:12px;line-height:27px;padding:15px 10px}.dungeon{--tile:min(11.4vw,7.1dvh)}.dungeon-footer div{padding:0 8px}}
 
 .editor-panel{grid-template-rows:46px auto minmax(240px,1fr) 49px 105px 65px}.learning-support{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid #354036;background:#202720;color:#aab5aa;font-size:10px;line-height:1.5}.learning-support strong{flex:0 0 auto;padding:4px 8px;border:1px solid #647568;border-radius:999px;color:#cfe1ca;font:9px var(--mono);letter-spacing:.08em}.learning-support[data-mode="copy"] strong{border-color:#6684a0;color:#afd0eb}.learning-support[data-mode="fill"] strong{border-color:#9a8147;color:#e3c979}.learning-support[data-mode="debug"] strong{border-color:#a66158;color:#eda096}.learning-support[data-mode="fromScratch"] strong{border-color:#719761;color:#b8dfa8}@media(max-width:800px){.editor-panel{grid-template-rows:46px auto minmax(180px,1fr) 49px 94px 61px}.learning-support{padding:7px 10px;font-size:9px}}
+
+/* Keep controls reachable on laptops and short browser windows. */
+.workspace{min-height:0}
+@media (max-height:720px) and (min-width:801px){
+  .topbar{height:60px}
+  .workspace{height:calc(100dvh - 60px);min-height:0}
+  .editor-panel{grid-template-rows:42px auto minmax(120px,1fr) 45px 82px 56px}
+  .panel-bar,.file-tab{height:42px}
+  .dungeon-panel{grid-template-rows:42px minmax(0,1fr) 56px}
+  .dungeon{--tile:min(5.7dvh,44px)}
+  .runbar{padding:0 10px}
+  .step-button,.run-button{height:36px}
+}
+@media(max-width:800px){.workspace{min-height:0}}
 .learning-support span{flex:1}.learning-support button{flex:0 0 auto;border:1px solid #566558;border-radius:5px;background:#283229;color:#d8e3d5;padding:6px 10px;font-size:9px;font-weight:800;cursor:pointer}.learning-support button:disabled{opacity:.45;cursor:default}
 .learning-support{flex-wrap:wrap}.learning-support pre{flex:1 0 100%;margin:2px 0 0;padding:8px 10px;border:1px solid #3b493d;border-radius:5px;background:#131815;white-space:pre-wrap}.learning-support pre[hidden]{display:none}.learning-support pre small{display:block;margin-bottom:5px;color:#718074;font:8px var(--mono);letter-spacing:.12em}.learning-support pre code{color:#b9d9ae;font:11px/1.6 var(--mono)}
