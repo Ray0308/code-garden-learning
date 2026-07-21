@@ -78,11 +78,14 @@ function simulate(floor, mobTypes = []) {
         else { assert.ok(mobIndex >= 0, `${floor}階層: input()の正面に対象がいません`); state.variables[command.variable] = level.mobs[mobIndex].type; }
       } else if (command.type === 'print') {
         const doorIsFront = level.door && level.door.x === front().x && level.door.y === front().y;
-        assert.ok(doorIsFront, `${floor}階層: print()の正面に扉がありません`);
         const quoted = command.value.match(/^["'](.*)["']$/);
         const value = quoted ? quoted[1] : state.variables[command.value];
-        assert.equal(value, level.door.password, `${floor}階層: 合言葉が一致しません`);
-        state.doorOpen = true;
+        assert.notEqual(value, undefined, `${floor}階層: print()する値がありません`);
+        if (level.door) {
+          assert.ok(doorIsFront, `${floor}階層: print()の正面に扉がありません`);
+          assert.equal(value, level.door.password, `${floor}階層: 合言葉が一致しません`);
+          state.doorOpen = true;
+        }
       } else if (command.type === 'attack()' || command.type === 'sayHello()') {
         const mobIndex = frontIndex(level.mobs || []);
         assert.ok(mobIndex >= 0, `${floor}階層: ${command.type}の正面にMOBがいません`);
@@ -99,8 +102,15 @@ function simulate(floor, mobTypes = []) {
 
 for (const floor of Object.keys(levels).map(Number)) console.log(`✓ ${floor}階層 ${levels[floor].title}: ${simulate(floor)}ステップ`);
 
+const randomPatterns = Array.from({ length: 8 }, (_, bits) => Array.from({ length: 3 }, (_, index) => bits & (1 << index) ? 'enemy' : 'ally'));
+for (const floor of Object.keys(levels).map(Number).filter(floor => levels[floor].setup?.type === 'randomMobs')) {
+  for (const pattern of randomPatterns) simulate(floor, pattern);
+}
+
 assert.equal(Object.keys(solutions).length, Object.keys(levels).length, '模範解答と階層数が一致しません');
 assert.equal(curriculum.length, Object.keys(levels).length, '教材一覧と階層数が一致しません');
+assert.equal(curriculum.length, 24, '全24ステージを実装します');
+assert.ok(Object.values(levels).filter(item => item.setup?.type === 'randomMobs').every(item => item.setup.positions.length === 3), '条件分岐ステージはランダムMOB3体で構成します');
 assert.ok(curriculum.every(item => item.language && item.minutes), '言語と学習時間の教材メタデータが必要です');
 assert.deepEqual(curriculum.slice(0, 4).map(item => item.stage), [1, 2, 3, 4], '第1章は4ステージを順番に実装します');
 assert.deepEqual(curriculum.slice(0, 4).map(item => levels[item.floor].support.mode), ['copy', 'fill', 'debug', 'fromScratch'], '第1章は段階的に支援を減らします');
