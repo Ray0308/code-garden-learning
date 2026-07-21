@@ -2,7 +2,8 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const solutions = require('./solutions.cjs');
-const { levels, curriculum } = require('../levels.js');
+const { levels, curriculum, worldOnePlan } = require('../levels.js');
+const pythonEngine = require('../engines/python.js');
 
 const appSource = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
 const vectors = [{ dx: 0, dy: 1 }, { dx: 1, dy: 0 }, { dx: 0, dy: -1 }, { dx: -1, dy: 0 }];
@@ -47,8 +48,8 @@ function compile(code) {
 
 function simulate(floor, mobTypes = []) {
   const level = structuredClone(levels[floor]);
-  if (floor === 5) level.door.password = 'TEST-PASSWORD';
-  if (floor === 6) level.mobs = [{ x: 1, y: 7 }, { x: 3, y: 6 }, { x: 5, y: 4 }]
+  if (level.setup?.type === 'adventurePassword') level.door.password = 'TEST-PASSWORD';
+  if (level.setup?.type === 'randomMobs') level.mobs = level.setup.positions
     .map((mob, index) => ({ ...mob, type: mobTypes[index] }));
   const state = { ...level.start, steps: 0, collected: false, doorOpen: false, variables: {}, resolved: new Set(), cleared: false };
   const front = () => ({ x: state.x + vectors[state.direction].dx, y: state.y + vectors[state.direction].dy });
@@ -106,5 +107,30 @@ console.log('✓ 6階層 魔物の全8パターン');
 assert.equal(Object.keys(solutions).length, Object.keys(levels).length, '模範解答と階層数が一致しません');
 assert.equal(curriculum.length, Object.keys(levels).length, '教材一覧と階層数が一致しません');
 assert.ok(curriculum.every(item => item.language && item.minutes), '言語と学習時間の教材メタデータが必要です');
+assert.ok(Object.values(levels).every(item => Array.isArray(item.capabilities)), '各ステージに使用可能な技の定義が必要です');
+assert.ok(Object.values(levels).every(item => item.support?.mode && item.support?.instruction), '各ステージに学習支援モードと案内が必要です');
+assert.ok(Object.values(levels).every(item => ['copy', 'fill', 'debug', 'fromScratch'].includes(item.support.mode)), '学習支援モードが不正です');
+assert.ok(Object.values(levels).every(item => Array.isArray(item.support.hints) && item.support.hints.length > 0), '各ステージに段階的ヒントが必要です');
+assert.ok(Object.values(levels).filter(item => item.support.mode === 'copy').every(item => item.support.example), '写経ステージには手入力用のお手本が必要です');
+assert.ok(Object.values(levels).filter(item => item.support.mode === 'fromScratch').every(item => item.support.initialCode), '自力入力ステージは最小限の初期コードから始めます');
+assert.equal(worldOnePlan.length, 12, '第1ワールは12ステージで設計します');
+assert.equal(new Set(worldOnePlan.map(item => item.id)).size, worldOnePlan.length, 'ステージIDは重複できません');
+assert.deepEqual([...new Set(worldOnePlan.map(item => item.chapter))], [1, 2, 3], '第1ワールは3章構成です');
+for (const chapter of [1, 2, 3]) {
+  const stages = worldOnePlan.filter(item => item.chapter === chapter);
+  assert.deepEqual(stages.map(item => item.stage), [1, 2, 3, 4], `${chapter}章は4ステージ必要です`);
+  assert.deepEqual(stages.map(item => item.support), ['copy', 'fill', 'debug', 'fromScratch'], `${chapter}章の支援は段階的に減らします`);
+}
+assert.ok(worldOnePlan.every(item => item.minutes >= 5 && item.minutes <= 15), '各ステージは5〜15分で設計します');
+assert.equal(pythonEngine.id, 'python', 'PythonエンジンのIDが必要です');
+for (const [floor, solution] of Object.entries(solutions)) {
+  const parsed = pythonEngine.compile(solution, { capabilities: levels[floor].capabilities, level: levels[floor] });
+  assert.deepEqual(parsed.errors, [], `${floor}階層の模範解答をPythonエンジンが解釈できません`);
+  assert.ok(parsed.commands.length > 0, `${floor}階層の実行命令が必要です`);
+}
+assert.match(pythonEngine.formatError({ line: 2, text: '???' }), /^2行目:/, '言語エンジンが初心者向けエラーを整形します');
+assert.ok(pythonEngine.compile('for _ in range(2):\n    move()', { capabilities: ['move'] }).errors.length > 0, '未習得の構文は教材データに従って拒否します');
+assert.ok(pythonEngine.compile('print("閉じ忘れ)', { capabilities: ['print'] }).errors.length > 0, '引用符の閉じ忘れを構文エラーにします');
 assert.equal(/collectGet\(\)|goDown\(\)/.test(appSource), false, '廃止した旧コマンドがapp.jsに残っています');
+assert.equal(/for\\s\+_|range\\\(/.test(appSource), false, 'Python固有の構文解析をapp.jsに残さないでください');
 console.log('全階層の模範解答・当たり判定・文言監査に合格しました');
