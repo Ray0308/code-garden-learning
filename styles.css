@@ -65,6 +65,40 @@
 .unknown-marker b{display:grid;place-items:center;width:18px;height:18px;border:1px solid #d7b6ef;border-radius:50%;background:#442d58;color:#f3dcff;box-shadow:0 0 9px rgba(199,139,235,.75);font:800 12px var(--mono);animation:unknown-bob 1.8s ease-in-out infinite}
 @keyframes unknown-pulse{50%{filter:brightness(.52) sepia(.25) saturate(2.7) hue-rotate(215deg) drop-shadow(0 0 3px #efd5ff) drop-shadow(0 0 10px #af6fd2)}}
 @keyframes unknown-bob{50%{transform:translateY(-3px)}}
+
+/* Bright adventure theme: welcoming surfaces with a focused dark code editor. */
+:root{--bg:#e9f4e9;--panel:#f8f5e8;--panel-2:#eef5e9;--line:#bfd0c2;--ink:#24372c;--muted:#6d7e72;--green:#4f9c68;--gold:#d79a2b;--red:#c65f53;--blue:#4c94c8}
+html,body{background:#dcebdd;color:var(--ink)}
+.app{background:radial-gradient(circle at 12% 0,rgba(255,236,151,.72),transparent 27%),radial-gradient(circle at 88% 8%,rgba(135,209,232,.48),transparent 30%),linear-gradient(145deg,#eaf6e9,#d8ece2 55%,#e7f2d9)}
+.topbar{border-bottom-color:#afc8b5;background:rgba(249,252,241,.94);box-shadow:0 5px 18px rgba(63,91,68,.12)}
+.brand{color:#284334}.brand b{color:#398258}.brand-rune{border-color:#d2a84e;background:linear-gradient(145deg,#fff9d9,#f5d989);color:#9b6914;box-shadow:0 3px 12px rgba(190,144,46,.22)}
+.chapter small{color:#6f8b78}.language{border-color:#9ab9a3;background:#edf7ed;color:#39724e}.ghost-button{border-color:#aac2ae;background:#fffdf4;color:#405e4a}
+.workspace{gap:3px;background:#a9c2af}.brief-panel,.dungeon-panel{background:rgba(247,249,235,.96)}
+.brief-panel.ide-sidebar{background:#eef5e8}.activity-bar{border-right-color:#b7cbb9;background:linear-gradient(#dcebdc,#cedfce)}
+.activity-button{color:#617e69}.activity-button:hover,.activity-button.active{background:#f8f8e9;color:#357550}.activity-button.active{border-left-color:#d59a2c}
+.sidebar-heading{border-bottom-color:#c2d2c3;color:#506b58}.sidebar-heading button{color:#617c68}.sidebar-heading button:hover{background:#dce9dc;color:#254a34}
+.mission-card,.reference-card{border-color:#bfd1bc;background:rgba(255,253,239,.94);box-shadow:0 8px 22px rgba(77,104,74,.1)}
+.section-label{color:#a66f13}.mission-icon{border-color:#d6ad51;background:linear-gradient(145deg,#fff4b9,#f3d77c);color:#936312;box-shadow:0 5px 16px rgba(202,157,54,.24)}
+.mission-card p,.function-row>span:last-child,.reference-guide{color:#667a6b!important}.goal{border-top-color:#d2decf}.goal b{color:#64816c}
+.reference-toggle,.function-row{color:#294033}.function-row{border-top-color:#d4dfd1}.function-row:hover{background:#edf5e8}.function-row .furigana-code code{color:#347450}
+#lessonGoal{background:#f6efcf;color:#66531d;border-left-color:#d39a2f}
+.editor-panel{color:#edf1e6;background:#171d18}.editor-panel .panel-bar{border-color:#303a31}.learning-support{border-color:#34463a;background:#202b23;color:#b8c8b9}
+.dungeon-bar{background:#f6f8e9;color:#52715c}.dungeon-bar div{color:#708276}.dungeon-viewport{background:radial-gradient(circle at 50% 35%,#dff4dd 0,#b9ddc4 48%,#8fbd9f 100%)}
+.dungeon{border-color:#8eaa8c;background:#a8c69f;box-shadow:0 22px 38px rgba(45,78,52,.25),0 0 0 6px rgba(245,239,190,.62)}
+.dungeon-tile{border-color:#9cb89a;background:linear-gradient(145deg,#c9ddbd,#adc9a8);box-shadow:inset 0 0 10px rgba(66,103,65,.12)}.dungeon-tile.moss{background:linear-gradient(145deg,#b8d7ac,#97c099)}
+.dungeon-tile.wall:before{background:linear-gradient(145deg,#d9c99e,#b7a87d);border-color:#8f805c;box-shadow:inset 0 5px #eee1b8,0 4px 7px rgba(76,72,48,.25)}
+.dungeon-footer{border-top-color:#b9cdbb;background:#f2f5e6}.dungeon-footer div{border-right-color:#c6d6c6}.dungeon-footer small{color:#708176}.dungeon-footer b{color:#334c3a}
+.stairs i{background:#3f9ed4;box-shadow:0 0 7px rgba(67,171,224,.7)}
+.clear-card{background:#fffdf0;border-color:#82ae71;color:#29402e;box-shadow:0 18px 50px rgba(60,91,62,.28)}.clear-card p{color:#617463}.clear-card code{background:#e8f2e4;color:#36714b}
+.fail-card{background:#fff2eb;color:#5d302a}.fail-card p{color:#80564f}
+.function-detail-card{border-color:#aebfae;background:#fffdf1;color:#263b2d;box-shadow:0 28px 80px rgba(48,74,52,.26)}.function-detail-card h2{color:#263b2d}.function-detail-card>p{color:#607264}.function-detail-close{border-color:#b7c8b5;background:#eaf2e6;color:#344d3b}
+.mobile-view-tabs{border-bottom-color:#b9ccba;background:#eef5e8}.mobile-view-tabs button{border-right-color:#c6d6c7;color:#637a69}.mobile-view-tabs button.active{background:#fffdf0;color:#34734c;box-shadow:inset 0 -3px #d6a137}
+.dungeon:is([data-floor="18"],[data-floor="19"],[data-floor="20"],[data-floor="21"],[data-floor="22"],[data-floor="23"]){border-color:#a998bd;background:#b8d3b7;box-shadow:0 22px 40px rgba(54,84,58,.25),0 0 0 6px rgba(255,243,177,.7),0 0 28px rgba(149,115,190,.2)}
+.dungeon:is([data-floor="18"],[data-floor="19"],[data-floor="20"],[data-floor="21"],[data-floor="22"],[data-floor="23"]) .dungeon-tile{border-color:#9db69f;background:linear-gradient(145deg,#c5dbc0,#a8c7aa)}
+.dungeon:is([data-floor="18"],[data-floor="19"],[data-floor="20"],[data-floor="21"],[data-floor="22"],[data-floor="23"]) .dungeon-tile.path{background:radial-gradient(circle at 50% 45%,#e5f0d5 0 18%,#c6dcbd 55%,#a9c8ac 100%);box-shadow:inset 0 0 12px rgba(89,133,89,.16)}
+.dungeon:is([data-floor="18"],[data-floor="19"],[data-floor="20"],[data-floor="21"],[data-floor="22"],[data-floor="23"]) .dungeon-tile.wall:before{background:linear-gradient(145deg,#dfcfaa,#bdaf86);border-color:#94855f;box-shadow:inset 0 4px #f1e4bd,0 4px 7px rgba(75,72,47,.22)}
+.dungeon-mob.unknown{filter:brightness(.68) sepia(.18) saturate(2.1) hue-rotate(205deg) drop-shadow(0 0 2px #fff) drop-shadow(0 0 8px #9a6fc2)}
+@keyframes unknown-pulse{50%{filter:brightness(.82) sepia(.12) saturate(2.3) hue-rotate(205deg) drop-shadow(0 0 4px #fff) drop-shadow(0 0 12px #a878cc)}}
 .workspace{min-height:0}
 @media (max-height:720px) and (min-width:801px){
   .topbar{height:60px}

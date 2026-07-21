@@ -128,6 +128,8 @@ else:
     sayHello()
 move()
 move()
+move()
+turnRight()
 mob = input()
 if mob == "enemy":
     attack()
@@ -135,6 +137,8 @@ else:
     sayHello()
 move()
 move()
+move()
+turnRight()
 mob = input()
 if mob == "enemy":
     attack()
@@ -143,6 +147,7 @@ else:
 move()
 move()
 move()
+turnRight()
 action()`,
   19: `mob = input()
 if mob == "enemy":
@@ -151,6 +156,8 @@ else:
     sayHello()
 move()
 move()
+move()
+turnRight()
 mob = input()
 if mob == "enemy":
     attack()
@@ -158,6 +165,8 @@ else:
     sayHello()
 move()
 move()
+move()
+turnRight()
 mob = input()
 if mob == "enemy":
     attack()
@@ -166,6 +175,7 @@ else:
 move()
 move()
 move()
+turnRight()
 action()`,
   20: `mob = input()
 if mob == "enemy":
@@ -174,6 +184,8 @@ else:
     sayHello()
 move()
 move()
+move()
+turnRight()
 mob = input()
 if mob == "enemy":
     attack()
@@ -181,6 +193,8 @@ else:
     sayHello()
 move()
 move()
+move()
+turnRight()
 mob = input()
 if mob == "enemy":
     attack()
@@ -189,6 +203,7 @@ else:
 move()
 move()
 move()
+turnRight()
 action()`,
   21: `mob = input()
 if mob == "enemy":
@@ -197,6 +212,8 @@ else:
     sayHello()
 move()
 move()
+move()
+turnRight()
 mob = input()
 if mob == "enemy":
     attack()
@@ -204,6 +221,8 @@ else:
     sayHello()
 move()
 move()
+move()
+turnRight()
 mob = input()
 if mob == "enemy":
     attack()
@@ -212,6 +231,7 @@ else:
 move()
 move()
 move()
+turnRight()
 action()`,
   22: `mob = input()
 if mob == "enemy":
@@ -220,6 +240,8 @@ else:
     sayHello()
 move()
 move()
+move()
+turnRight()
 mob = input()
 if mob == "enemy":
     attack()
@@ -227,6 +249,8 @@ else:
     sayHello()
 move()
 move()
+move()
+turnRight()
 mob = input()
 if mob == "enemy":
     attack()
@@ -235,6 +259,7 @@ else:
 move()
 move()
 move()
+turnRight()
 action()`,
   23: `for _ in range(3):
     mob = input()
@@ -244,6 +269,7 @@ action()`,
         sayHello()
     move()
     move()
-move()
+    move()
+    turnRight()
 action()`
 };
