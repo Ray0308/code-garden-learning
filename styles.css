@@ -30,6 +30,16 @@
 @media(max-width:1100px){.workspace:has(.ide-sidebar:not(.collapsed)){grid-template-columns:250px minmax(340px,1fr) minmax(380px,1fr)}.workspace:has(.ide-sidebar.collapsed){grid-template-columns:50px minmax(340px,1fr) minmax(380px,1fr)}.sidebar-pane{min-width:199px}}
 @media(max-width:800px){.brief-panel.ide-sidebar{order:3;min-height:420px;grid-template-columns:50px minmax(0,1fr)}.ide-sidebar.collapsed{min-height:54px!important}.sidebar-pane{min-width:calc(100vw - 50px)}.reference-body{max-height:60vh}}
 
+/* Compact tool rail: panels float over the editor instead of reserving space. */
+@media(min-width:801px){
+  .workspace,.workspace:has(.ide-sidebar.collapsed),.workspace:has(.ide-sidebar:not(.collapsed)){grid-template-columns:50px minmax(380px,.95fr) minmax(430px,1.2fr)}
+  .brief-panel.ide-sidebar,.ide-sidebar.collapsed{position:relative;z-index:30;display:block;overflow:visible}
+  .activity-bar{position:relative;width:50px;height:100%;z-index:2}
+  .side-panel{position:absolute;inset:0 auto 0 50px;width:min(300px,calc(100vw - 50px));overflow:hidden;border-right:1px solid #b7cbb9;box-shadow:18px 0 36px rgba(31,46,34,.18);transition:opacity .16s ease,transform .16s ease;transform-origin:left center}
+  .ide-sidebar.collapsed .side-panel{pointer-events:none;opacity:0;transform:translateX(-10px)}
+  .sidebar-pane{min-width:300px}
+}
+
 /* Feedback states and floor identities */
 .clear-card p{margin:2px 0;color:#b8c5b5;font-size:11px;line-height:1.6}.clear-card code{padding:8px;border-radius:4px;background:#101511;color:#a9d69a;font:10px var(--mono)}
 .fail-card[data-kind="syntax"]{border-color:#c99c3b;background:#262218}.fail-card[data-kind="syntax"] span{color:#efbd54}.fail-card[data-kind="syntax"] button{background:#d6aa4c;color:#1c170c}
