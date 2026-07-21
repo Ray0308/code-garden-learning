@@ -86,5 +86,164 @@ for _ in range(3):
 action()
 turnLeft()
 move()
+action()`,
+  12: `attack()
+move()
+move()
+action()`,
+  13: `sayHello()
+move()
+move()
+action()`,
+  14: `move()
+attack()
+move()
+move()
+move()
+action()`,
+  15: `attack()
+move()
+move()
+move()
+sayHello()
+move()
+move()
+move()
+action()`,
+  16: `mob = input()
+attack()
+move()
+move()
+action()`,
+  17: `mob = input()
+print(mob)
+sayHello()
+move()
+move()
+action()`,
+  18: `mob = input()
+if mob == "enemy":
+    attack()
+else:
+    sayHello()
+move()
+move()
+mob = input()
+if mob == "enemy":
+    attack()
+else:
+    sayHello()
+move()
+move()
+mob = input()
+if mob == "enemy":
+    attack()
+else:
+    sayHello()
+move()
+move()
+move()
+action()`,
+  19: `mob = input()
+if mob == "enemy":
+    attack()
+else:
+    sayHello()
+move()
+move()
+mob = input()
+if mob == "enemy":
+    attack()
+else:
+    sayHello()
+move()
+move()
+mob = input()
+if mob == "enemy":
+    attack()
+else:
+    sayHello()
+move()
+move()
+move()
+action()`,
+  20: `mob = input()
+if mob == "enemy":
+    attack()
+else:
+    sayHello()
+move()
+move()
+mob = input()
+if mob == "enemy":
+    attack()
+else:
+    sayHello()
+move()
+move()
+mob = input()
+if mob == "enemy":
+    attack()
+else:
+    sayHello()
+move()
+move()
+move()
+action()`,
+  21: `mob = input()
+if mob == "enemy":
+    attack()
+else:
+    sayHello()
+move()
+move()
+mob = input()
+if mob == "enemy":
+    attack()
+else:
+    sayHello()
+move()
+move()
+mob = input()
+if mob == "enemy":
+    attack()
+else:
+    sayHello()
+move()
+move()
+move()
+action()`,
+  22: `mob = input()
+if mob == "enemy":
+    attack()
+else:
+    sayHello()
+move()
+move()
+mob = input()
+if mob == "enemy":
+    attack()
+else:
+    sayHello()
+move()
+move()
+mob = input()
+if mob == "enemy":
+    attack()
+else:
+    sayHello()
+move()
+move()
+move()
+action()`,
+  23: `for _ in range(3):
+    mob = input()
+    if mob == "enemy":
+        attack()
+    else:
+        sayHello()
+    move()
+    move()
+move()
 action()`
 };

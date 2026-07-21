@@ -151,7 +151,7 @@ function createAdventurePassword() {
 function resetState(showMessage = true) {
   clearCard.classList.remove('show');
   failCard.classList.remove('show');
-  state = { ...level().start, collected: 0, cleared: false, doorOpen: false, steps: 0, variables: {}, resolvedMobs: [] };
+  state = { ...level().start, collected: 0, cleared: false, doorOpen: false, steps: 0, variables: {}, resolvedMobs: [], inspectedMobs: [] };
   parsedCommands = parseCode().commands;
   executionIndex = 0;
   running = false;
@@ -250,12 +250,15 @@ function renderDungeon() {
 
   (level().mobs || []).forEach((mob, index) => {
     if (state.resolvedMobs.includes(index)) return;
+    const front = frontPosition();
+    const revealed = level().setup?.type !== 'randomMobs' || state.inspectedMobs.includes(index) || (front.x === mob.x && front.y === mob.y);
     const image = document.createElement('img');
-    image.className = `dungeon-object dungeon-mob ${mob.type}`;
+    image.className = `dungeon-object dungeon-mob ${revealed ? mob.type : 'unknown'}`;
     image.style.setProperty('--x', mob.x);
     image.style.setProperty('--y', mob.y);
-    image.src = mob.type === 'ally' ? 'assets/mob/ally/down.png' : (enemySprites.down || 'assets/mob/enemy/sheet-chroma.png');
-    image.alt = mob.type === 'ally' ? '同族のフクロウ' : '敵のフクロウ';
+    image.src = revealed ? (mob.type === 'ally' ? 'assets/mob/ally/down.png' : (enemySprites.down || 'assets/mob/enemy/sheet-chroma.png')) : 'assets/player/down.png';
+    image.alt = revealed ? (mob.type === 'ally' ? '同族のフクロウ' : '敵のフクロウ') : '正体不明の影';
+    if (!revealed) image.style.filter = 'brightness(0) opacity(.75)';
     dungeon.append(image);
   });
 
@@ -377,6 +380,7 @@ async function execute(commandInfo) {
       setOutput('›', `門番から受け取った文字列を ${commandInfo.variable} に保存しました`);
     } else if (mobIndex >= 0 && !state.resolvedMobs.includes(mobIndex)) {
       state.variables[commandInfo.variable] = level().mobs[mobIndex].type;
+      if (!state.inspectedMobs.includes(mobIndex)) state.inspectedMobs.push(mobIndex);
       setOutput('›', `MOBの種類を ${commandInfo.variable} に保存しました`);
     } else {
       setOutput('!', `${line}行目: 受け取れる入力データがありません`, 'warning');
