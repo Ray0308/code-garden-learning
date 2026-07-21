@@ -11,7 +11,7 @@ const { curriculum, levels, defaultLanguage, columns: COLS, rows: ROWS } = windo
 const languageEngine = window.CODE_GARDEN_ENGINES?.[defaultLanguage];
 if (!languageEngine) throw new Error(`Language engine is not registered: ${defaultLanguage}`);
 const stageOrder = curriculum.map(item => item.floor).filter(floor => levels[floor]);
-const supportLabels = { copy: '写経', fill: '穴埋め', debug: 'エラー修正', fromScratch: '自力入力' };
+const supportLabels = { copy: '写経', change: '変更', debug: 'エラー修正', fromScratch: '自力入力' };
 const directions = [
   { dx: 0, dy: 1, label: '下', sprite: 'assets/character/main-down.png' },
   { dx: 1, dy: 0, label: '右', sprite: 'assets/character/main-right.png' },

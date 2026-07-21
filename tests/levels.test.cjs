@@ -121,10 +121,13 @@ assert.match(appSource, /!mob\.type\) mob\.type = Math\.random\(\)/, 'input()実
 assert.doesNotMatch(appSource, /front\.x === mob\.x && front\.y === mob\.y/, '正面へ到達しただけではMOBの正体を表示しません');
 assert.ok(curriculum.every(item => item.language && item.minutes), '言語と学習時間の教材メタデータが必要です');
 assert.deepEqual(curriculum.slice(0, 4).map(item => item.stage), [1, 2, 3, 4], '第1章は4ステージを順番に実装します');
-assert.deepEqual(curriculum.slice(0, 4).map(item => levels[item.floor].support.mode), ['copy', 'fill', 'debug', 'fromScratch'], '第1章は段階的に支援を減らします');
+const basicDifficultyOrder = ['copy', 'change', 'fromScratch', 'debug'];
+assert.deepEqual(curriculum.slice(0, 4).map(item => levels[item.floor].support.mode), basicDifficultyOrder, '第1章は写経・変更・自力・修正の順に進みます');
+assert.deepEqual(curriculum.slice(4, 8).map(item => levels[item.floor].support.mode), basicDifficultyOrder, '第2章は写経・変更・自力・修正の順に進みます');
+assert.deepEqual(curriculum.slice(8, 12).map(item => levels[item.floor].support.mode), basicDifficultyOrder, '第3章は写経・変更・自力・修正の順に進みます');
 assert.ok(Object.values(levels).every(item => Array.isArray(item.capabilities)), '各ステージに使用可能な技の定義が必要です');
 assert.ok(Object.values(levels).every(item => item.support?.mode && item.support?.instruction), '各ステージに学習支援モードと案内が必要です');
-assert.ok(Object.values(levels).every(item => ['copy', 'fill', 'debug', 'fromScratch'].includes(item.support.mode)), '学習支援モードが不正です');
+assert.ok(Object.values(levels).every(item => ['copy', 'change', 'debug', 'fromScratch'].includes(item.support.mode)), '学習支援モードが不正です');
 assert.ok(Object.values(levels).every(item => Array.isArray(item.support.hints) && item.support.hints.length > 0), '各ステージに段階的ヒントが必要です');
 assert.ok(Object.values(levels).filter(item => item.support.mode === 'copy').every(item => item.support.example), '写経ステージには手入力用のお手本が必要です');
 assert.ok(Object.values(levels).filter(item => item.support.mode === 'fromScratch').every(item => item.support.initialCode), '自力入力ステージは最小限の初期コードから始めます');
