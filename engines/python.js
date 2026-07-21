@@ -64,8 +64,8 @@
             continue;
           }
           if (text === 'attack()') unavailable('attack', index + 1);
-          else if (text === 'sayHello()') unavailable('sayHello', index + 1);
-          else if (valid.has(text)) commands.push({ command: text, line: index + 1 });
+          if (text === 'sayHello()') unavailable('sayHello', index + 1);
+          if (valid.has(text)) commands.push({ command: text, line: index + 1 });
           else errors.push({ line: index + 1, text });
           index++;
         }
