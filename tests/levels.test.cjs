@@ -138,6 +138,8 @@ for (const [floor, solution] of Object.entries(solutions)) {
 assert.match(pythonEngine.formatError({ line: 2, text: '???' }), /^2行目:/, '言語エンジンが初心者向けエラーを整形します');
 assert.ok(pythonEngine.compile('for _ in range(2):\n    move()', { capabilities: ['move'] }).errors.length > 0, '未習得の構文は教材データに従って拒否します');
 assert.ok(pythonEngine.compile('print("閉じ忘れ)', { capabilities: ['print'] }).errors.length > 0, '引用符の閉じ忘れを構文エラーにします');
+assert.deepEqual(pythonEngine.compile('attack()', { capabilities: ['attack'] }).commands.map(item => item.command), ['attack()'], 'attack()を実行キューへ追加します');
+assert.deepEqual(pythonEngine.compile('sayHello()', { capabilities: ['sayHello'] }).commands.map(item => item.command), ['sayHello()'], 'sayHello()を実行キューへ追加します');
 assert.equal(/collectGet\(\)|goDown\(\)/.test(appSource), false, '廃止した旧コマンドがapp.jsに残っています');
 assert.equal(/for\\s\+_|range\\\(/.test(appSource), false, 'Python固有の構文解析をapp.jsに残さないでください');
 assert.match(appSource, /stageOrder\.forEach\(\(floor, index\)/, 'テスト用ステージ選択は教材データから自動生成します');
