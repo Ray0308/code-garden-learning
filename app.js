@@ -604,7 +604,17 @@ document.querySelector('#continueAdventure').hidden = loadProgress().cleared.len
 document.querySelector('#startTutorial').addEventListener('click', () => startAdventure(0));
 document.querySelector('#continueAdventure').addEventListener('click', continueAdventure);
 document.querySelector('#skipTutorial').addEventListener('click', () => startAdventure(1));
-document.querySelectorAll('[data-test-floor]').forEach(button => button.addEventListener('click', () => startAdventure(Number(button.dataset.testFloor), true)));
+const testFloorButtons = document.querySelector('#testFloorButtons');
+stageOrder.forEach((floor, index) => {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.dataset.testFloor = floor;
+  button.textContent = `${index + 1}`;
+  button.title = `${index + 1}. ${levels[floor].title}`;
+  button.setAttribute('aria-label', `ステージ${index + 1}：${levels[floor].title}`);
+  button.addEventListener('click', () => startAdventure(floor, true));
+  testFloorButtons.appendChild(button);
+});
 document.querySelector('#lessonStart').addEventListener('click', () => { document.querySelector('#lessonModal').classList.remove('show'); document.querySelector('#lessonModal').setAttribute('aria-hidden', 'true'); });
 editor.addEventListener('input', updateLineNumbers);
 editor.addEventListener('scroll', () => { lineNumbers.scrollTop = editor.scrollTop; });
