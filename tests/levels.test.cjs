@@ -140,4 +140,6 @@ assert.ok(pythonEngine.compile('for _ in range(2):\n    move()', { capabilities:
 assert.ok(pythonEngine.compile('print("閉じ忘れ)', { capabilities: ['print'] }).errors.length > 0, '引用符の閉じ忘れを構文エラーにします');
 assert.equal(/collectGet\(\)|goDown\(\)/.test(appSource), false, '廃止した旧コマンドがapp.jsに残っています');
 assert.equal(/for\\s\+_|range\\\(/.test(appSource), false, 'Python固有の構文解析をapp.jsに残さないでください');
+assert.match(appSource, /stageOrder\.forEach\(\(floor, index\)/, 'テスト用ステージ選択は教材データから自動生成します');
+assert.equal(/data-test-floor="\d+"/.test(fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8')), false, 'テスト用ステージをHTMLへ固定記述しないでください');
 console.log('全階層の模範解答・当たり判定・文言監査に合格しました');
