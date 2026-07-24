@@ -6,10 +6,19 @@ const clearCard = document.querySelector('#clearCard');
 const failCard = document.querySelector('#failCard');
 const titleScreen = document.querySelector('#titleScreen');
 const titleContent = titleScreen.querySelector('.title-content');
-const GAME = { birdName: 'フォっくん', storageKey: 'code-dungeon-progress-v3' };
-const { curriculum, levels, defaultLanguage, columns: COLS, rows: ROWS } = window.CODE_GARDEN_CONTENT;
-const languageEngine = window.CODE_GARDEN_ENGINES?.[defaultLanguage];
-if (!languageEngine) throw new Error(`Language engine is not registered: ${defaultLanguage}`);
+const GAME = { birdName: 'フォっくん', storageKey: 'code-dungeon-progress-v3', modeStorageKey: 'code-dungeon-language-mode' };
+const content = window.CODE_GARDEN_CONTENT;
+const languageRegistry = window.CODE_GARDEN_LANGUAGE_REGISTRY;
+if (!languageRegistry) throw new Error('Language registry is not loaded');
+Object.values(content.courses || {}).forEach(course => languageRegistry.registerCourse(course));
+Object.values(window.CODE_GARDEN_ENGINES || {}).forEach(engine => languageRegistry.registerEngine(engine));
+let requestedLanguage = content.defaultLanguage;
+try { requestedLanguage = localStorage.getItem(GAME.modeStorageKey) || content.defaultLanguage; } catch {}
+const activeLanguage = languageRegistry.hasMode(requestedLanguage) ? requestedLanguage : content.defaultLanguage;
+const languageMode = languageRegistry.getMode(activeLanguage);
+const { course, engine: languageEngine } = languageMode;
+const { curriculum, levels } = course;
+const { columns: COLS, rows: ROWS } = content;
 const stageOrder = curriculum.map(item => item.floor).filter(floor => levels[floor]);
 const supportLabels = { copy: '写経', change: '変更', debug: 'エラー修正', fromScratch: '自力入力' };
 const directions = [
@@ -30,6 +39,28 @@ let adventurePassword = '';
 let currentHintIndex = 0;
 let titleFitFrame = 0;
 
+function setupLanguageMode() {
+  const { meta } = course;
+  document.querySelector('#titleIntro').textContent = meta.intro;
+  document.querySelector('#editorFileName').textContent = meta.fileName;
+  document.querySelector('#gameFunctionNote').textContent = meta.functionNote;
+  editor.setAttribute('aria-label', meta.editorLabel);
+
+  const selector = document.querySelector('#languageModeSelect');
+  languageRegistry.listModes().forEach(mode => {
+    const option = document.createElement('option');
+    option.value = mode.id;
+    option.textContent = mode.label;
+    option.selected = mode.id === activeLanguage;
+    selector.append(option);
+  });
+  selector.addEventListener('change', () => {
+    if (!languageRegistry.hasMode(selector.value)) return;
+    try { localStorage.setItem(GAME.modeStorageKey, selector.value); } catch {}
+    window.location.reload();
+  });
+}
+
 function fitTitleToViewport() {
   cancelAnimationFrame(titleFitFrame);
   titleFitFrame = requestAnimationFrame(() => {
@@ -43,7 +74,7 @@ function fitTitleToViewport() {
 }
 
 function level() { return levels[currentFloor]; }
-function progressKey() { return `${GAME.storageKey}:${defaultLanguage}`; }
+function progressKey() { return `${GAME.storageKey}:${activeLanguage}`; }
 function nextFloor(floor) {
   const index = stageOrder.indexOf(floor);
   return index >= 0 ? stageOrder[index + 1] : undefined;
@@ -53,9 +84,9 @@ function loadProgress() {
   try {
     const saved = localStorage.getItem(progressKey());
     if (saved) return JSON.parse(saved);
-    return { language: defaultLanguage, cleared: [], lastFloor: stageOrder[0] };
+    return { language: activeLanguage, cleared: [], lastFloor: stageOrder[0] };
   }
-  catch { return { language: defaultLanguage, cleared: [], lastFloor: stageOrder[0] }; }
+  catch { return { language: activeLanguage, cleared: [], lastFloor: stageOrder[0] }; }
 }
 
 function saveProgress(floor) {
@@ -64,7 +95,7 @@ function saveProgress(floor) {
   progress.masteredSkills = [...new Set([...(progress.masteredSkills || []), ...level().capabilities])];
   progress.lastFloor = nextFloor(floor) ?? floor;
   progress.updatedAt = new Date().toISOString();
-  progress.language = defaultLanguage;
+  progress.language = activeLanguage;
   localStorage.setItem(progressKey(), JSON.stringify(progress));
 }
 
@@ -72,7 +103,7 @@ function recordAttempt() {
   const progress = loadProgress();
   progress.attempts = progress.attempts || {};
   progress.attempts[currentFloor] = (progress.attempts[currentFloor] || 0) + 1;
-  progress.language = defaultLanguage;
+  progress.language = activeLanguage;
   progress.updatedAt = new Date().toISOString();
   localStorage.setItem(progressKey(), JSON.stringify(progress));
 }
@@ -86,7 +117,7 @@ function showNextHint() {
   const progress = loadProgress();
   progress.hintsUsed = progress.hintsUsed || {};
   progress.hintsUsed[currentFloor] = Math.max(progress.hintsUsed[currentFloor] || 0, currentHintIndex);
-  progress.language = defaultLanguage;
+  progress.language = activeLanguage;
   progress.updatedAt = new Date().toISOString();
   localStorage.setItem(progressKey(), JSON.stringify(progress));
   const hintButton = document.querySelector('#hintBtn');
@@ -699,6 +730,7 @@ function prepareEnemySprites() {
   source.src = 'assets/mob/enemy/sheet-chroma.png';
 }
 
+setupLanguageMode();
 updateLineNumbers();
 resetState(false);
 prepareEnemySprites();

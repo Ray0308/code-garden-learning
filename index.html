@@ -25,7 +25,7 @@
       <span class="title-kicker">CODE-BASED DUNGEON</span>
       <h1><span id="birdNameTitle">フォっくん</span>の<br>迷宮写経</h1>
       <div class="title-hero"><img src="assets/character/main-down.png" alt="冒険するフクロウ"><i></i><b></b></div>
-      <p>毎日ちょっとずつ、遊びながらPythonの基礎を身につけよう。</p>
+      <p id="titleIntro">毎日ちょっとずつ、遊びながらコードの基礎を身につけよう。</p>
       <button class="title-primary" id="startTutorial">チュートリアルから始める</button>
       <button class="title-secondary continue-button" id="continueAdventure">続きから冒険する</button>
       <button class="title-secondary" id="skipTutorial">1階層から始める</button>
@@ -59,8 +59,8 @@
       </a>
       <div class="chapter"><small>CHAPTER 00</small><strong>はじまりの間</strong></div>
       <div class="top-actions">
-        <span class="language">1日 5〜15分</span>
-        <span class="language">Python</span>
+        <span class="language duration-badge">1日 5〜15分</span>
+        <label class="language language-picker"><span>言語</span><select id="languageModeSelect" aria-label="学習する言語"></select></label>
         <button id="resetBtn" class="ghost-button">↺ リセット</button>
       </div>
     </header>
@@ -120,14 +120,14 @@
           </section>
           <section class="sidebar-pane" data-pane="help" hidden>
             <header class="sidebar-heading"><span>HELP</span><button type="button" data-close-sidebar aria-label="閉じる">×</button></header>
-            <div class="help-pane"><h2>操作ガイド</h2><p>コードを書いて「実行する」を押すと、上から順番に命令が動きます。</p><p class="game-function-note">move()などは、このゲーム専用に用意したPython関数です。</p><dl><dt>実行</dt><dd>Ctrl + Enter</dd><dt>関数の解説</dt><dd>左の ƒ を押して、関数名を選択</dd><dt>困ったとき</dt><dd>実行結果を確認し、最後に変更した行から見直してみよう</dd></dl></div>
+            <div class="help-pane"><h2>操作ガイド</h2><p>コードを書いて「実行する」を押すと、上から順番に命令が動きます。</p><p class="game-function-note" id="gameFunctionNote">move()などは、このゲーム専用に用意した関数です。</p><dl><dt>実行</dt><dd>Ctrl + Enter</dd><dt>関数の解説</dt><dd>左の ƒ を押して、関数名を選択</dd><dt>困ったとき</dt><dd>実行結果を確認し、最後に変更した行から見直してみよう</dd></dl></div>
           </section>
         </div>
       </aside>
 
       <section class="editor-panel" data-view-panel="editor">
         <div class="panel-bar">
-          <div class="file-tab"><span>●</span> main.py</div>
+          <div class="file-tab"><span>●</span> <b id="editorFileName">main</b></div>
           <div class="editor-state"><i></i><span id="editorState">入力待ち</span></div>
         </div>
         <div class="learning-support" id="learningSupport" data-mode="copy">
@@ -138,7 +138,7 @@
         </div>
         <div class="editor-wrap">
           <div class="line-numbers" id="lineNumbers">1<br>2<br>3<br>4<br>5<br>6<br>7<br>8<br>9<br>10<br>11<br>12</div>
-          <textarea id="codeEditor" aria-label="Pythonコードエディター" spellcheck="false" autocomplete="off" autocapitalize="off"># 灯の場所まで進もう
+          <textarea id="codeEditor" aria-label="コードエディター" spellcheck="false" autocomplete="off" autocapitalize="off"># 灯の場所まで進もう
 move()
 action()
 move()
@@ -187,8 +187,9 @@ action()</textarea>
       </section>
     </main>
   </div>
-  <script src="levels.js?v=20260721-5"></script>
-  <script src="engines/python.js?v=20260721-3"></script>
-  <script src="app.js?v=20260721-6"></script>
+  <script src="core/language-registry.js?v=20260724-1"></script>
+  <script src="levels.js?v=20260724-1"></script>
+  <script src="engines/python.js?v=20260724-1"></script>
+  <script src="app.js?v=20260724-1"></script>
 </body>
 </html>

@@ -86,5 +86,6 @@
 
   root.CODE_GARDEN_ENGINES = root.CODE_GARDEN_ENGINES || {};
   root.CODE_GARDEN_ENGINES[engine.id] = engine;
+  root.CODE_GARDEN_LANGUAGE_REGISTRY?.registerEngine(engine);
   if (typeof module !== 'undefined' && module.exports) module.exports = engine;
 })(typeof globalThis !== 'undefined' ? globalThis : window);
