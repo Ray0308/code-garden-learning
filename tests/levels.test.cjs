@@ -5,6 +5,7 @@ const solutions = require('./solutions.cjs');
 const languageRegistry = require('../core/language-registry.js');
 const content = require('../levels.js');
 require('../courses/python-common.js');
+require('../courses/python-hints.js');
 const pythonEngine = require('../engines/python.js');
 const { course: pythonCourse, engine: registeredPythonEngine } = languageRegistry.getMode('python');
 const { levels, curriculum, worldOnePlan } = pythonCourse;
@@ -141,6 +142,14 @@ assert.ok(Object.values(levels).every(item => Array.isArray(item.capabilities)),
 assert.ok(Object.values(levels).every(item => item.support?.mode && item.support?.instruction), '各ステージに学習支援モードと案内が必要です');
 assert.ok(Object.values(levels).every(item => ['copy', 'change', 'debug', 'fromScratch'].includes(item.support.mode)), '学習支援モードが不正です');
 assert.ok(Object.values(levels).every(item => Array.isArray(item.support.hints) && item.support.hints.length > 0), '各ステージに段階的ヒントが必要です');
+for (const [floor, stage] of Object.entries(levels)) {
+  const answer = solutions[floor] || stage.solution || '';
+  const answerLines = new Set(answer.split('\n').map(line => line.trim()).filter(line => line && !line.startsWith('#')));
+  for (const hint of stage.support.hints) {
+    assert.equal(answerLines.has(hint.trim()), false, `${Number(floor) + 1}階層のヒントが模範解答の1行をそのまま表示しています`);
+    assert.doesNotMatch(hint, /(?:^|\s)(?:move|action|attack|sayHello|turnLeft|turnRight)\(\).*(?:move|action|attack|sayHello|turnLeft|turnRight)\(\)/, `${Number(floor) + 1}階層のヒントが命令順を答えています`);
+  }
+}
 assert.ok(Object.values(levels).filter(item => item.support.mode === 'copy').every(item => item.support.example), '写経ステージには手入力用のお手本が必要です');
 assert.ok(Object.values(levels).filter(item => item.support.mode === 'fromScratch').every(item => item.support.initialCode), '自力入力ステージは最小限の初期コードから始めます');
 assert.equal(worldOnePlan.length, 12, '第1ワールは12ステージで設計します');
