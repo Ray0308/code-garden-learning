@@ -4,6 +4,7 @@ const path = require('node:path');
 const solutions = require('./solutions.cjs');
 const languageRegistry = require('../core/language-registry.js');
 const content = require('../levels.js');
+require('../courses/python-common.js');
 const pythonEngine = require('../engines/python.js');
 const { course: pythonCourse, engine: registeredPythonEngine } = languageRegistry.getMode('python');
 const { levels, curriculum, worldOnePlan } = pythonCourse;
@@ -60,7 +61,13 @@ function simulate(floor, mobTypes = []) {
   const frontIndex = objects => objects.findIndex((object, index) => object.x === front().x && object.y === front().y && !state.resolved.has(index));
   function run(commands) {
     for (const command of commands) {
-      if (command.type === 'if') { run(state.variables[command.variable] === command.expected ? command.yes : command.no); continue; }
+      if (command.type === 'if') {
+        const condition = command.condition
+          ? pythonEngine.evaluateExpression(command.condition, state.variables)
+          : state.variables[command.variable] === command.expected;
+        run(condition ? command.yes : command.no);
+        continue;
+      }
       state.steps++;
       assert.ok(state.steps <= level.maxSteps, `${floor}階層: 最大ステップ数を超えました`);
       if (command.type === 'move()') {
@@ -82,8 +89,9 @@ function simulate(floor, mobTypes = []) {
         else { assert.ok(mobIndex >= 0, `${floor}階層: input()の正面に対象がいません`); state.variables[command.variable] = level.mobs[mobIndex].type; }
       } else if (command.type === 'print') {
         const doorIsFront = level.door && level.door.x === front().x && level.door.y === front().y;
-        const quoted = command.value.match(/^["'](.*)["']$/);
-        const value = quoted ? quoted[1] : state.variables[command.value];
+        const value = typeof command.value === 'string'
+          ? (command.value.match(/^["'](.*)["']$/)?.[1] ?? state.variables[command.value])
+          : pythonEngine.evaluateExpression(command.value, state.variables);
         assert.notEqual(value, undefined, `${floor}階層: print()する値がありません`);
         if (level.door) {
           assert.ok(doorIsFront, `${floor}階層: print()の正面に扉がありません`);
@@ -102,23 +110,23 @@ function simulate(floor, mobTypes = []) {
   const parsed = pythonEngine.compile(solutions[floor], { capabilities: level.capabilities, level });
   assert.deepEqual(parsed.errors, [], `${floor}階層: Pythonエンジンで模範解答を解釈できません`);
   const normalize = command => command.command === 'conditional'
-    ? { type: 'if', variable: command.variable, expected: command.expected, yes: command.thenCommands.map(normalize), no: command.elseCommands.map(normalize) }
+    ? { type: 'if', variable: command.variable, expected: command.expected, condition: command.condition, yes: command.thenCommands.map(normalize), no: command.elseCommands.map(normalize) }
     : { ...command, type: command.command };
   run(parsed.commands.map(normalize));
   assert.equal(state.cleared, true, `${floor}階層: 模範解答でクリアできません`);
   return state.steps;
 }
 
-for (const floor of Object.keys(levels).map(Number)) console.log(`✓ ${floor}階層 ${levels[floor].title}: ${simulate(floor)}ステップ`);
+for (const floor of Object.keys(levels).map(Number).filter(floor => floor < 24)) console.log(`✓ ${floor}階層 ${levels[floor].title}: ${simulate(floor)}ステップ`);
 
 const randomPatterns = Array.from({ length: 8 }, (_, bits) => Array.from({ length: 3 }, (_, index) => bits & (1 << index) ? 'enemy' : 'ally'));
 for (const floor of Object.keys(levels).map(Number).filter(floor => levels[floor].setup?.type === 'randomMobs')) {
   for (const pattern of randomPatterns) simulate(floor, pattern);
 }
 
-assert.equal(Object.keys(solutions).length, Object.keys(levels).length, '模範解答と階層数が一致しません');
 assert.equal(curriculum.length, Object.keys(levels).length, '教材一覧と階層数が一致しません');
-assert.equal(curriculum.length, 24, '全24ステージを実装します');
+assert.equal(curriculum.length, 48, '共通編は全48ステージです');
+assert.equal(Object.keys(levels).filter(floor => Number(floor) >= 24).length, 24, '5大機能を扱う共通後半は24ステージです');
 assert.ok(Object.values(levels).filter(item => item.setup?.type === 'randomMobs').every(item => item.setup.positions.length === 3), '条件分岐ステージはランダムMOB3体で構成します');
 assert.match(appSource, /type: null/, 'ランダムMOBはステージ開始時点では種類を未確定にします');
 assert.match(appSource, /!mob\.type\) mob\.type = Math\.random\(\)/, 'input()実行時にMOBの種類を初めて決定します');
@@ -168,6 +176,31 @@ for (const [floor, solution] of Object.entries(solutions)) {
   assert.deepEqual(parsed.errors, [], `${floor}階層の模範解答をPythonエンジンが解釈できません`);
   assert.ok(parsed.commands.length > 0, `${floor}階層の実行命令が必要です`);
 }
+for (const floor of Object.keys(levels).map(Number).filter(value => value >= 24)) {
+  const level = levels[floor];
+  const parsed = pythonEngine.compile(level.solution, { capabilities: level.capabilities, level });
+  assert.deepEqual(parsed.errors, [], `${floor}階層の共通編模範解答を解釈できます`);
+  const variables = {};
+  const storage = {};
+  const outputs = [];
+  const run = commands => {
+    for (const command of commands) {
+      if (command.command === 'conditional') {
+        const condition = pythonEngine.evaluateExpression(command.condition, variables);
+        run(condition ? command.thenCommands : command.elseCommands);
+      } else if (command.command === 'assign') variables[command.variable] = pythonEngine.evaluateExpression(command.value, variables);
+      else if (command.command === 'print') outputs.push(pythonEngine.evaluateExpression(command.value, variables));
+      else if (command.command === 'save') storage[String(pythonEngine.evaluateExpression(command.key, variables))] = pythonEngine.evaluateExpression(command.value, variables);
+      else if (command.command === 'load') variables[command.variable] = storage[String(pythonEngine.evaluateExpression(command.key, variables))];
+    }
+  };
+  run(parsed.commands);
+  const actual = level.challenge.kind === 'storage' ? storage[level.challenge.key]
+    : level.challenge.kind === 'variable' ? variables[level.challenge.name] : outputs.at(-1);
+  assert.deepEqual(actual, level.challenge.expected, `${floor}階層の共通課題をクリアできます`);
+}
+assert.deepEqual([...new Set(curriculum.filter(item => item.world === 3).map(item => item.topic))].length >= 20, true, '共通編は十分な学習項目を含みます');
+assert.ok(curriculum.some(item => item.topic === '仮想保存') && curriculum.some(item => item.topic === '仮想読込'), '保存と読込を共通編に含みます');
 assert.match(pythonEngine.formatError({ line: 2, text: '???' }), /^2行目:/, '言語エンジンが初心者向けエラーを整形します');
 assert.ok(pythonEngine.compile('for _ in range(2):\n    move()', { capabilities: ['move'] }).errors.length > 0, '未習得の構文は教材データに従って拒否します');
 assert.ok(pythonEngine.compile('print("閉じ忘れ)', { capabilities: ['print'] }).errors.length > 0, '引用符の閉じ忘れを構文エラーにします');
