@@ -2,8 +2,11 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const solutions = require('./solutions.cjs');
-const { levels, curriculum, worldOnePlan } = require('../levels.js');
+const languageRegistry = require('../core/language-registry.js');
+const content = require('../levels.js');
 const pythonEngine = require('../engines/python.js');
+const { course: pythonCourse, engine: registeredPythonEngine } = languageRegistry.getMode('python');
+const { levels, curriculum, worldOnePlan } = pythonCourse;
 
 const appSource = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
 const stylesSource = fs.readFileSync(path.join(__dirname, '..', 'styles.css'), 'utf8');
@@ -142,6 +145,24 @@ for (const chapter of [1, 2, 3]) {
 }
 assert.ok(worldOnePlan.every(item => item.minutes >= 5 && item.minutes <= 15), '各ステージは5〜15分で設計します');
 assert.equal(pythonEngine.id, 'python', 'PythonエンジンのIDが必要です');
+assert.equal(registeredPythonEngine, pythonEngine, 'Pythonエンジンを共通言語レジストリへ登録します');
+assert.equal(content.courses.python, pythonCourse, 'Python教材を言語別コースとして公開します');
+assert.deepEqual(languageRegistry.listModes().map(mode => mode.id), ['python'], '完成済みの言語モードだけを一覧表示します');
+const futureRegistry = languageRegistry.createRegistry();
+const futureCourse = {
+  id: 'future-language',
+  meta: { label: 'Future', fileName: 'Main.txt', editorLabel: 'Future editor', intro: 'Future intro', functionNote: 'Future functions' },
+  curriculum: [],
+  levels: {}
+};
+const futureEngine = { id: 'future-language', compile() {}, formatError() {} };
+futureRegistry.registerCourse(futureCourse);
+assert.equal(futureRegistry.hasMode('future-language'), false, '教材だけでは言語モードを公開しません');
+futureRegistry.registerEngine(futureEngine);
+assert.equal(futureRegistry.hasMode('future-language'), true, '教材とエンジンが揃うと新言語モードを公開します');
+assert.deepEqual(futureRegistry.getMode('future-language'), { id: 'future-language', course: futureCourse, engine: futureEngine }, '共通APIから言語モードを取得できます');
+assert.throws(() => futureRegistry.registerCourse({ ...futureCourse }), /already registered/, '同じIDの教材を誤って上書きできません');
+assert.throws(() => futureRegistry.registerEngine({ ...futureEngine }), /already registered/, '同じIDのエンジンを誤って上書きできません');
 for (const [floor, solution] of Object.entries(solutions)) {
   const parsed = pythonEngine.compile(solution, { capabilities: levels[floor].capabilities, level: levels[floor] });
   assert.deepEqual(parsed.errors, [], `${floor}階層の模範解答をPythonエンジンが解釈できません`);
@@ -162,6 +183,8 @@ assert.match(appSource, /output\.replaceChildren\(prompt, document\.createTextNo
 assert.doesNotMatch(appSource, /output\.innerHTML\s*=.*message/, '利用者の出力をinnerHTMLへ渡してはいけません');
 assert.match(stylesSource, /@media\(max-height:500px\)[\s\S]*?\.runbar\{position:absolute;[^}]*bottom:0/, '短い画面では実行ボタンを画面内の下部へ固定します');
 assert.match(stylesSource, /@media\(max-height:500px\)[\s\S]*?\.learning-support\{max-height:52px;overflow-y:auto/, '短い画面では学習案内が実行ボタンを押し出さないようにします');
+assert.match(appSource, /languageRegistry\.listModes\(\)/, '言語選択肢を登録済みモードから自動生成します');
+assert.match(appSource, /progressKey\(\).+activeLanguage/, '進捗を言語モードごとに分離します');
 assert.equal(/collectGet\(\)|goDown\(\)/.test(appSource), false, '廃止した旧コマンドがapp.jsに残っています');
 assert.equal(/for\\s\+_|range\\\(/.test(appSource), false, 'Python固有の構文解析をapp.jsに残さないでください');
 assert.match(appSource, /stageOrder\.forEach\(\(floor, index\)/, 'テスト用ステージ選択は教材データから自動生成します');

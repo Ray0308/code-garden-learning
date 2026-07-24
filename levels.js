@@ -104,7 +104,21 @@
   };
   Object.entries(levels).forEach(([floor, stage]) => { stage.support = supportByFloor[floor]; });
 
-  const content = { version: 1, defaultLanguage: 'python', columns: 8, rows: 10, curriculum, worldOnePlan, levels };
+  const pythonCourse = {
+    id: 'python',
+    meta: {
+      label: 'Python',
+      fileName: 'main.py',
+      editorLabel: 'Pythonコードエディター',
+      intro: '毎日ちょっとずつ、遊びながらPythonの基礎を身につけよう。',
+      functionNote: 'move()などは、このゲーム専用に用意したPython関数です。'
+    },
+    curriculum,
+    worldOnePlan,
+    levels
+  };
+  const content = { version: 2, defaultLanguage: 'python', columns: 8, rows: 10, courses: { python: pythonCourse } };
+  root.CODE_GARDEN_LANGUAGE_REGISTRY?.registerCourse(pythonCourse);
   root.CODE_GARDEN_CONTENT = content;
   if (typeof module !== 'undefined' && module.exports) module.exports = content;
 })(typeof globalThis !== 'undefined' ? globalThis : window);
