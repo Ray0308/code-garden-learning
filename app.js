@@ -45,6 +45,19 @@ function setupLanguageMode() {
   document.querySelector('#editorFileName').textContent = meta.fileName;
   document.querySelector('#gameFunctionNote').textContent = meta.functionNote;
   editor.setAttribute('aria-label', meta.editorLabel);
+  if (activeLanguage !== 'python') {
+    const variantTools = window.CODE_GARDEN_VARIANT_TOOLS;
+    document.querySelectorAll('[data-insert]').forEach(button => {
+      button.dataset.insert = variantTools.fromPython(button.dataset.insert, activeLanguage);
+    });
+    const keys = activeLanguage === 'java'
+      ? [['    ', 'Tab'], ['()', '( )'], [';', ';'], ['{', '{'], ['}', '}'], ['\n', '↵']]
+      : [['    ', 'Tab'], ['$', '$'], [';', ';'], ['{', '{'], ['}', '}'], ['\n', '↵']];
+    document.querySelectorAll('[data-code-key]').forEach((button, index) => {
+      button.dataset.codeKey = keys[index][0];
+      button.textContent = keys[index][1];
+    });
+  }
 
   const selector = document.querySelector('#languageModeSelect');
   languageRegistry.listModes().forEach(mode => {

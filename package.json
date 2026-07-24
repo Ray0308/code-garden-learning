@@ -2,6 +2,6 @@
   "name": "code-garden-learning",
   "private": true,
   "scripts": {
-    "test": "node tests/levels.test.cjs"
+    "test": "node tests/levels.test.cjs && node tests/language-modes.test.cjs"
   }
 }
