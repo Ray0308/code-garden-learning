@@ -42,6 +42,9 @@
         .replace(/Integer\.parseInt\(/g, 'int(')
         .replace(/([A-Za-z_]\w*)\.size\(\)/g, 'len($1)')
         .replace(/([A-Za-z_]\w*)\.get\(([^()]+)\)/g, '$1[$2]');
+    } else if (language === 'javascript') {
+      value = value.replace(/\bparseInt\(/g, 'int(')
+        .replace(/([A-Za-z_]\w*)\.length\b/g, 'len($1)');
     } else {
       value = value.replace(/\$([A-Za-z_]\w*)/g, '$1')
         .replace(/count\(/g, 'len(')
@@ -74,7 +77,9 @@
       if (text === '}') { indent = Math.max(0, indent - 1); continue; }
       const loop = language === 'java'
         ? text.match(/^for\s*\(\s*int\s+\w+\s*=\s*0\s*;\s*\w+\s*<\s*(\d+)\s*;\s*\w+\+\+\s*\)\s*\{$/)
-        : text.match(/^for\s*\(\s*\$\w+\s*=\s*0\s*;\s*\$\w+\s*<\s*(\d+)\s*;\s*\$\w+\+\+\s*\)\s*\{$/);
+        : language === 'javascript'
+          ? text.match(/^for\s*\(\s*let\s+\w+\s*=\s*0\s*;\s*\w+\s*<\s*(\d+)\s*;\s*\w+\+\+\s*\)\s*\{$/)
+          : text.match(/^for\s*\(\s*\$\w+\s*=\s*0\s*;\s*\$\w+\s*<\s*(\d+)\s*;\s*\$\w+\+\+\s*\)\s*\{$/);
       if (loop) {
         output.push(`${' '.repeat(indent * 4)}for _ in range(${loop[1]}):`);
         indent++;
@@ -95,6 +100,9 @@
       if (language === 'java') {
         text = text.replace(/^System\.out\.println\((.*)\)$/, 'print($1)')
           .replace(/^(?:int|double|String|boolean|var|List(?:<[^>]+>)?|Map(?:<[^>]+>)?)\s+([A-Za-z_]\w*)\s*=/, '$1 =');
+      } else if (language === 'javascript') {
+        text = text.replace(/^console\.log\((.*)\)$/, 'print($1)')
+          .replace(/^(?:let|const|var)\s+([A-Za-z_]\w*)\s*=/, '$1 =');
       } else {
         text = text.replace(/^echo\s+(.+)$/, 'print($1)').replace(/\$([A-Za-z_]\w*)/g, '$1');
       }
