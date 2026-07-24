@@ -316,7 +316,10 @@ function renderDungeon() {
 
 function setOutput(mark, message, type = '') {
   output.className = type;
-  output.innerHTML = `<span class="prompt">${mark}</span> ${message}`;
+  const prompt = document.createElement('span');
+  prompt.className = 'prompt';
+  prompt.textContent = mark;
+  output.replaceChildren(prompt, document.createTextNode(` ${message}`));
 }
 
 function showClear() {
@@ -642,7 +645,7 @@ document.querySelector('#birdNameTitle').textContent = GAME.birdName;
 document.querySelector('#continueAdventure').hidden = loadProgress().cleared.length === 0;
 document.querySelector('#startTutorial').addEventListener('click', () => startAdventure(0));
 document.querySelector('#continueAdventure').addEventListener('click', continueAdventure);
-document.querySelector('#skipTutorial').addEventListener('click', () => startAdventure(1));
+document.querySelector('#skipTutorial').addEventListener('click', () => startAdventure(1, true));
 const testFloorButtons = document.querySelector('#testFloorButtons');
 stageOrder.forEach((floor, index) => {
   const button = document.createElement('button');

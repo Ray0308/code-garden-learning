@@ -36,16 +36,20 @@
 
           const condition = text.match(/^if\s+([A-Za-z_]\w*)\s*==\s*(['"])(.*?)\2:$/);
           if (condition) {
-            unavailable('if', index + 1);
+            const ifLine = index + 1;
+            unavailable('if', ifLine);
             const thenBlock = parseBlock(index + 1, indent + 4);
+            if (!thenBlock.commands.length) errors.push({ line: ifLine, text: 'if の中にインデントした命令が必要です' });
             index = thenBlock.index;
             let elseCommands = [];
             if (index < lines.length && lines[index].trim() === 'else:' && lines[index].length - lines[index].trimStart().length === indent) {
+              const elseLine = index + 1;
               const elseBlock = parseBlock(index + 1, indent + 4);
               elseCommands = elseBlock.commands;
+              if (!elseCommands.length) errors.push({ line: elseLine, text: 'else の中にインデントした命令が必要です' });
               index = elseBlock.index;
             } else errors.push({ line: index + 1, text: 'if に対応する else: が必要です' });
-            commands.push({ command: 'conditional', line: index + 1, variable: condition[1], expected: condition[3], thenCommands: thenBlock.commands, elseCommands });
+            commands.push({ command: 'conditional', line: ifLine, variable: condition[1], expected: condition[3], thenCommands: thenBlock.commands, elseCommands });
             continue;
           }
 
