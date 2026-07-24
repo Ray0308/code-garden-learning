@@ -151,6 +151,14 @@ assert.ok(pythonEngine.compile('for _ in range(2):\n    move()', { capabilities:
 assert.ok(pythonEngine.compile('print("閉じ忘れ)', { capabilities: ['print'] }).errors.length > 0, '引用符の閉じ忘れを構文エラーにします');
 assert.deepEqual(pythonEngine.compile('attack()', { capabilities: ['attack'] }).commands.map(item => item.command), ['attack()'], 'attack()を実行キューへ追加します');
 assert.deepEqual(pythonEngine.compile('sayHello()', { capabilities: ['sayHello'] }).commands.map(item => item.command), ['sayHello()'], 'sayHello()を実行キューへ追加します');
+const conditional = pythonEngine.compile('if mob == "enemy":\n    attack()\nelse:\n    sayHello()', { capabilities: ['if', 'attack', 'sayHello'] });
+assert.deepEqual(conditional.errors, [], '正しい条件分岐を解釈できます');
+assert.equal(conditional.commands[0].line, 1, '条件分岐の実行エラーはifの行番号を示します');
+assert.ok(pythonEngine.compile('if mob == "enemy":\nelse:\n    sayHello()', { capabilities: ['if', 'sayHello'] }).errors.some(error => error.line === 1 && /if の中/.test(error.text)), '空のifブロックを構文エラーにします');
+assert.ok(pythonEngine.compile('if mob == "enemy":\n    attack()\nelse:', { capabilities: ['if', 'attack'] }).errors.some(error => error.line === 3 && /else の中/.test(error.text)), '空のelseブロックを構文エラーにします');
+assert.match(appSource, /skipTutorial'\)\.addEventListener\('click', \(\) => startAdventure\(1, true\)\)/, 'チュートリアルを飛ばす場合はステージ1を解放して開始します');
+assert.match(appSource, /output\.replaceChildren\(prompt, document\.createTextNode\(` \$\{message\}`\)\)/, '出力内容はHTMLとして解釈せずテキスト表示します');
+assert.doesNotMatch(appSource, /output\.innerHTML\s*=.*message/, '利用者の出力をinnerHTMLへ渡してはいけません');
 assert.equal(/collectGet\(\)|goDown\(\)/.test(appSource), false, '廃止した旧コマンドがapp.jsに残っています');
 assert.equal(/for\\s\+_|range\\\(/.test(appSource), false, 'Python固有の構文解析をapp.jsに残さないでください');
 assert.match(appSource, /stageOrder\.forEach\(\(floor, index\)/, 'テスト用ステージ選択は教材データから自動生成します');
