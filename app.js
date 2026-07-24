@@ -148,6 +148,8 @@ function selectFloor(floor, bypassUnlock = false) {
   document.querySelector('#attackReference').hidden = !selectedLevel.capabilities.includes('attack');
   document.querySelector('#sayHelloReference').hidden = !selectedLevel.capabilities.includes('sayHello');
   document.querySelector('#ifReference').hidden = !selectedLevel.capabilities.includes('if');
+  document.querySelector('#variableReference').hidden = !selectedLevel.capabilities.includes('variables');
+  document.querySelector('#storageReference').hidden = !selectedLevel.capabilities.includes('storage');
   document.querySelector('#learningSupport').dataset.mode = selectedLevel.support.mode;
   document.querySelector('#supportModeLabel').textContent = supportLabels[selectedLevel.support.mode];
   document.querySelector('#supportInstruction').textContent = selectedLevel.support.instruction;
@@ -199,7 +201,7 @@ function resetState(showMessage = true) {
   prepareLevel(level());
   clearCard.classList.remove('show');
   failCard.classList.remove('show');
-  state = { ...level().start, collected: 0, cleared: false, doorOpen: false, steps: 0, variables: {}, resolvedMobs: [], inspectedMobs: [] };
+  state = { ...level().start, collected: 0, cleared: false, doorOpen: false, steps: 0, variables: {}, storage: {}, outputValues: [], resolvedMobs: [], inspectedMobs: [] };
   parsedCommands = parseCode().commands;
   executionIndex = 0;
   running = false;
@@ -230,6 +232,7 @@ function showFailure(message, kind = 'runtime') {
 }
 
 function incompleteMessage() {
+  if (level().challenge && !challengeComplete()) return level().challenge.hint || '課題の計算結果を確認して、もう一度実行しよう。';
   if (level().target && !state.collected) return '灯をまだ回収していません。灯のあるマスで action() を実行しよう。';
   if (level().door && !state.doorOpen) return '扉がまだ閉まっています。扉の正面で指定された出力を実行しよう。';
   if (level().mobs && state.resolvedMobs.length < level().mobs.length) return `未対応のMOBがあと${level().mobs.length - state.resolvedMobs.length}体います。正面から対応しよう。`;
@@ -374,14 +377,28 @@ function objectIndexAtFront(objects = []) {
   return objects.findIndex(object => object.x === front.x && object.y === front.y);
 }
 
+function challengeComplete() {
+  const challenge = level().challenge;
+  if (!challenge) return true;
+  const actual = challenge.kind === 'variable' ? state.variables[challenge.name]
+    : challenge.kind === 'storage' ? state.storage[challenge.key]
+      : state.outputValues.at(-1);
+  return JSON.stringify(actual) === JSON.stringify(challenge.expected);
+}
+
 async function execute(commandInfo) {
   const { command, line } = commandInfo;
   if (command === 'conditional') {
-    if (!Object.hasOwn(state.variables, commandInfo.variable)) {
-      setOutput('×', `${line}行目: ${commandInfo.variable} という変数が見つかりません`, 'error');
+    let condition;
+    try {
+      condition = commandInfo.condition
+        ? languageEngine.evaluateExpression(commandInfo.condition, state.variables)
+        : String(state.variables[commandInfo.variable]) === commandInfo.expected;
+    } catch (error) {
+      setOutput('×', `${line}行目: ${error.message}`, 'error');
       return false;
     }
-    const branch = String(state.variables[commandInfo.variable]) === commandInfo.expected ? commandInfo.thenCommands : commandInfo.elseCommands;
+    const branch = condition ? commandInfo.thenCommands : commandInfo.elseCommands;
     for (const nested of branch) if (!await execute(nested)) return false;
     return true;
   }
@@ -423,7 +440,7 @@ async function execute(commandInfo) {
       setOutput('◆', `${line}行目: 灯を回収しました`, 'success');
       document.querySelector('#goalDot').classList.add('done');
       document.querySelector('#goalState').textContent = '階段へ';
-    } else if (state.x === level().exit.x && state.y === level().exit.y && (!level().target || state.collected) && (!level().door || state.doorOpen) && (!level().mobs || state.resolvedMobs.length === level().mobs.length)) {
+    } else if (state.x === level().exit.x && state.y === level().exit.y && (!level().target || state.collected) && (!level().door || state.doorOpen) && (!level().mobs || state.resolvedMobs.length === level().mobs.length) && challengeComplete()) {
       state.cleared = true;
       setOutput('✓', `${line}行目: 階段を降りました`, 'success');
       document.querySelector('#goalState').textContent = '達成';
@@ -452,11 +469,10 @@ async function execute(commandInfo) {
     }
   }
   if (command === 'print') {
-    let value = commandInfo.value;
-    const quoted = value.match(/^(['"])(.*)\1$/);
-    if (quoted) value = quoted[2];
-    else if (Object.hasOwn(state.variables, value)) value = state.variables[value];
-    else { setOutput('×', `${line}行目: ${value} という変数が見つかりません`, 'error'); renderDungeon(); return false; }
+    let value;
+    try { value = languageEngine.evaluateExpression(commandInfo.value, state.variables); }
+    catch (error) { setOutput('×', `${line}行目: ${error.message}`, 'error'); renderDungeon(); return false; }
+    state.outputValues.push(value);
     setOutput('›', String(value));
     if (level().door && objectIndexAtFront([level().door]) === 0) {
       if (String(value) === level().door.password) {
@@ -466,6 +482,27 @@ async function execute(commandInfo) {
         setOutput('✓', `${value} ― 扉が開きました`, 'success');
       } else setOutput('!', `${value} ― 扉は反応しません`, 'warning');
     }
+  }
+  if (command === 'assign') {
+    try {
+      state.variables[commandInfo.variable] = languageEngine.evaluateExpression(commandInfo.value, state.variables);
+      setOutput('›', `${commandInfo.variable} に ${JSON.stringify(state.variables[commandInfo.variable])} を保存しました`);
+    } catch (error) { setOutput('×', `${line}行目: ${error.message}`, 'error'); renderDungeon(); return false; }
+  }
+  if (command === 'save') {
+    try {
+      const key = String(languageEngine.evaluateExpression(commandInfo.key, state.variables));
+      state.storage[key] = languageEngine.evaluateExpression(commandInfo.value, state.variables);
+      setOutput('›', `${key} を仮想ファイルへ保存しました`, 'success');
+    } catch (error) { setOutput('×', `${line}行目: ${error.message}`, 'error'); renderDungeon(); return false; }
+  }
+  if (command === 'load') {
+    try {
+      const key = String(languageEngine.evaluateExpression(commandInfo.key, state.variables));
+      if (!Object.hasOwn(state.storage, key)) throw new Error(`${key} という保存データが見つかりません`);
+      state.variables[commandInfo.variable] = state.storage[key];
+      setOutput('›', `${key} を ${commandInfo.variable} に読み込みました`);
+    } catch (error) { setOutput('×', `${line}行目: ${error.message}`, 'error'); renderDungeon(); return false; }
   }
   if (command === 'attack()' || command === 'sayHello()') {
     const mobIndex = objectIndexAtFront(level().mobs || []);

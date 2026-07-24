@@ -114,6 +114,8 @@
             <button class="function-row" id="attackReference" data-insert="attack()" hidden><span class="furigana-code"><ruby><code>attack</code><rt>攻撃する</rt></ruby><ruby><code>()</code><rt>実行する</rt></ruby></span><span>正面にいる敵へ攻撃する</span></button>
             <button class="function-row" id="sayHelloReference" data-insert="sayHello()" hidden><span class="furigana-code"><ruby><code>sayHello</code><rt>こんにちはと言う</rt></ruby><ruby><code>()</code><rt>実行する</rt></ruby></span><span>正面にいる同族へ挨拶する</span></button>
             <button class="function-row" id="ifReference" data-insert="if mob == &quot;enemy&quot;:&#10;    attack()&#10;else:&#10;    sayHello()" hidden><span class="furigana-code"><ruby><code>if</code><rt>もし</rt></ruby> <ruby><code>mob</code><rt>MOBの種類</rt></ruby> <ruby><code>==</code><rt>等しい</rt></ruby> <ruby><code>"enemy"</code><rt>敵</rt></ruby><code>:</code></span><span>条件が正しいときだけ字下げした命令を実行する</span></button>
+            <button class="function-row" id="variableReference" data-insert="value = 10" hidden><span class="furigana-code"><code>value = 10</code></span><span>値へ名前を付けて変数に保存する</span></button>
+            <button class="function-row" id="storageReference" data-insert="save(&quot;key&quot;, value)&#10;value = load(&quot;key&quot;)" hidden><span class="furigana-code"><code>save / load</code></span><span>教材内の仮想ファイルへ値を保存・読込する</span></button>
             <p class="reference-guide">関数を押すと、ふりがなプログラミング形式の解説画面が開きます。</p>
           </div>
         </section>
@@ -188,8 +190,9 @@ action()</textarea>
     </main>
   </div>
   <script src="core/language-registry.js?v=20260724-1"></script>
-  <script src="levels.js?v=20260724-1"></script>
-  <script src="engines/python.js?v=20260724-1"></script>
-  <script src="app.js?v=20260724-1"></script>
+  <script src="levels.js?v=20260724-2"></script>
+  <script src="courses/python-common.js?v=20260724-2"></script>
+  <script src="engines/python.js?v=20260724-2"></script>
+  <script src="app.js?v=20260724-2"></script>
 </body>
 </html>
