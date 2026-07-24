@@ -1,0 +1,158 @@
+(function defineLanguageVariantTools(root) {
+  function clone(value) {
+    return JSON.parse(JSON.stringify(value));
+  }
+
+  function replaceOutsideStrings(source, replacer) {
+    return source.split(/("(?:\\.|[^"])*"|'(?:\\.|[^'])*')/g)
+      .map((part, index) => index % 2 ? part : replacer(part))
+      .join('');
+  }
+
+  function phpVariables(source, names) {
+    return replaceOutsideStrings(source, part => part.replace(/\b[A-Za-z_]\w*\b/g, word => names.has(word) ? `$${word}` : word));
+  }
+
+  function expression(source, language, names = new Set()) {
+    let value = source.trim();
+    if (language === 'java') {
+      value = value.replace(/\bTrue\b/g, 'true').replace(/\bFalse\b/g, 'false')
+        .replace(/\band\b/g, '&&').replace(/\bor\b/g, '||')
+        .replace(/\bint\(/g, 'Integer.parseInt(').replace(/\blen\(([^()]+)\)/g, '$1.size()');
+      value = value.replace(/^\{((?:"[^"]*"|'[^']*')\s*:\s*[^{}]+)\}$/, (_, body) => `Map.of(${body.replace(/\s*:\s*/g, ', ')})`);
+      value = value.replace(/\b(\w+)\[([^\]]+)\]/g, '$1.get($2)');
+      value = value.replace(/^\[([^\[\]]*)\]$/, 'List.of($1)');
+      return value;
+    }
+    value = value.replace(/\bTrue\b/g, 'true').replace(/\bFalse\b/g, 'false')
+      .replace(/\band\b/g, '&&').replace(/\bor\b/g, '||')
+      .replace(/\bint\(/g, '(int)(').replace(/\blen\(/g, 'count(');
+    value = value.replace(/\{((?:"[^"]*"|'[^']*')\s*:\s*[^{}]+)\}/g, (_, body) => `[${body.replace(/\s*:\s*/g, ' => ')}]`);
+    return phpVariables(value, names);
+  }
+
+  function collectVariables(source) {
+    const names = new Set();
+    for (const line of source.split('\n')) {
+      const match = line.trim().match(/^([A-Za-z_]\w*)\s*=/);
+      if (match) names.add(match[1]);
+    }
+    return names;
+  }
+
+  function statement(text, language, names, declared) {
+    const print = text.match(/^print\((.*)\)$/);
+    if (print) return language === 'java'
+      ? `System.out.println(${expression(print[1], language, names)});`
+      : `echo ${expression(print[1], language, names)};`;
+    const input = text.match(/^([A-Za-z_]\w*)\s*=\s*input\(\)$/);
+    const load = text.match(/^([A-Za-z_]\w*)\s*=\s*load\((.*)\)$/);
+    const assign = text.match(/^([A-Za-z_]\w*)\s*=\s*(.*)$/);
+    const match = input || load || assign;
+    if (match) {
+      const name = match[1];
+      const rawValue = input ? 'input()' : load ? `load(${expression(load[2], language, names)})` : expression(assign[2], language, names);
+      if (language === 'php') return `$${name} = ${rawValue};`;
+      const prefix = declared.has(name) ? '' : 'var ';
+      declared.add(name);
+      return `${prefix}${name} = ${rawValue};`;
+    }
+    const save = text.match(/^save\((.*),\s*(.*)\)$/);
+    if (save) return `save(${expression(save[1], language, names)}, ${expression(save[2], language, names)});`;
+    return `${text};`;
+  }
+
+  function fromPython(source, language) {
+    if (!source) return source;
+    const names = collectVariables(source);
+    const declared = new Set();
+    const output = [];
+    const stack = [];
+    for (const raw of source.replace(/\t/g, '    ').split('\n')) {
+      const trimmed = raw.trim();
+      const indent = raw.length - raw.trimStart().length;
+      if (!trimmed) { output.push(''); continue; }
+      while (stack.length && indent < stack.at(-1)) {
+        output.push(`${' '.repeat(stack.length * 4 - 4)}}`);
+        stack.pop();
+      }
+      if (trimmed === 'else:') {
+        output.push(`${' '.repeat(stack.length * 4)}else {`);
+        stack.push(indent + 4);
+        continue;
+      }
+      const prefix = ' '.repeat(stack.length * 4);
+      if (trimmed.startsWith('#')) {
+        output.push(`${prefix}//${trimmed.slice(1)}`);
+        continue;
+      }
+      const loop = trimmed.match(/^for\s+_\s+in\s+range\((\d+)\):$/);
+      if (loop) {
+        output.push(language === 'java'
+          ? `${prefix}for (int i = 0; i < ${loop[1]}; i++) {`
+          : `${prefix}for ($i = 0; $i < ${loop[1]}; $i++) {`);
+        stack.push(indent + 4);
+        continue;
+      }
+      const condition = trimmed.match(/^if\s+(.+):$/);
+      if (condition) {
+        output.push(`${prefix}if (${expression(condition[1], language, names)}) {`);
+        stack.push(indent + 4);
+        continue;
+      }
+      output.push(`${prefix}${statement(trimmed, language, names, declared)}`);
+    }
+    while (stack.length) {
+      output.push(`${' '.repeat(stack.length * 4 - 4)}}`);
+      stack.pop();
+    }
+    return output.join('\n');
+  }
+
+  function translatedSyntax(syntax, language) {
+    const table = language === 'java' ? [
+      ['print(', 'System.out.println('], ['True', 'true'], ['False', 'false'], [' and ', ' && '], [' or ', ' || '],
+      ['int("12")', 'Integer.parseInt("12")'], ['len(items)', 'items.size()'], ['items[2]', 'items.get(2)'],
+      ['items = [2, 4, 6]', 'var items = List.of(2, 4, 6)'], ['user["name"]', 'user.get("name")'],
+      ['if score >= 60:', 'if (score >= 60) { ... }'], ['number % 2 == 0', 'number % 2 == 0'],
+      ['for / if / %', 'for / if / %'], ['score = 10', 'var score = 10;']
+    ] : [
+      ['print(', 'echo '], ['True', 'true'], ['False', 'false'], [' and ', ' && '], [' or ', ' || '],
+      ['int("12")', '(int) "12"'], ['len(items)', 'count($items)'], ['items[2]', '$items[2]'],
+      ['items = [2, 4, 6]', '$items = [2, 4, 6];'], ['user["name"]', '$user["name"]'],
+      ['if score >= 60:', 'if ($score >= 60) { ... }'], ['number % 2 == 0', '$number % 2 == 0'],
+      ['score = 10', '$score = 10;']
+    ];
+    let result = syntax;
+    for (const [before, after] of table) result = result.replace(before, after);
+    if (language === 'php') result = phpVariables(result, new Set(['score','name','ready','number','total','items','level','age','has_key','has_pass','key','passcode','user']));
+    return result;
+  }
+
+  function createCourse(base, options) {
+    const course = {
+      id: options.id,
+      meta: options.meta,
+      curriculum: clone(base.curriculum).map(item => ({ ...item, language: options.id })),
+      levels: clone(base.levels)
+    };
+    for (const level of Object.values(course.levels)) {
+      level.mission = translatedSyntax(level.mission, options.id);
+      level.description = translatedSyntax(level.description, options.id);
+      level.goal = translatedSyntax(level.goal, options.id);
+      level.starter = fromPython(level.starter, options.id);
+      level.solution = fromPython(level.solution, options.id);
+      if (level.support) {
+        level.support.instruction = translatedSyntax(level.support.instruction, options.id);
+        level.support.initialCode = fromPython(level.support.initialCode, options.id);
+        level.support.example = fromPython(level.support.example, options.id);
+        level.support.hints = (level.support.hints || []).map(hint => translatedSyntax(hint, options.id));
+      }
+    }
+    course.curriculum.forEach(item => { item.syntax = translatedSyntax(item.syntax, options.id); });
+    return course;
+  }
+
+  root.CODE_GARDEN_VARIANT_TOOLS = { fromPython, createCourse, translatedSyntax };
+  if (typeof module !== 'undefined' && module.exports) module.exports = root.CODE_GARDEN_VARIANT_TOOLS;
+})(typeof globalThis !== 'undefined' ? globalThis : window);
