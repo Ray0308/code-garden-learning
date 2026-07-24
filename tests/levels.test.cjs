@@ -6,6 +6,7 @@ const { levels, curriculum, worldOnePlan } = require('../levels.js');
 const pythonEngine = require('../engines/python.js');
 
 const appSource = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
+const stylesSource = fs.readFileSync(path.join(__dirname, '..', 'styles.css'), 'utf8');
 const vectors = [{ dx: 0, dy: 1 }, { dx: 1, dy: 0 }, { dx: 0, dy: -1 }, { dx: -1, dy: 0 }];
 
 function compile(code) {
@@ -159,6 +160,8 @@ assert.ok(pythonEngine.compile('if mob == "enemy":\n    attack()\nelse:', { capa
 assert.match(appSource, /skipTutorial'\)\.addEventListener\('click', \(\) => startAdventure\(1, true\)\)/, 'チュートリアルを飛ばす場合はステージ1を解放して開始します');
 assert.match(appSource, /output\.replaceChildren\(prompt, document\.createTextNode\(` \$\{message\}`\)\)/, '出力内容はHTMLとして解釈せずテキスト表示します');
 assert.doesNotMatch(appSource, /output\.innerHTML\s*=.*message/, '利用者の出力をinnerHTMLへ渡してはいけません');
+assert.match(stylesSource, /@media\(max-height:500px\)[\s\S]*?\.runbar\{position:absolute;[^}]*bottom:0/, '短い画面では実行ボタンを画面内の下部へ固定します');
+assert.match(stylesSource, /@media\(max-height:500px\)[\s\S]*?\.learning-support\{max-height:52px;overflow-y:auto/, '短い画面では学習案内が実行ボタンを押し出さないようにします');
 assert.equal(/collectGet\(\)|goDown\(\)/.test(appSource), false, '廃止した旧コマンドがapp.jsに残っています');
 assert.equal(/for\\s\+_|range\\\(/.test(appSource), false, 'Python固有の構文解析をapp.jsに残さないでください');
 assert.match(appSource, /stageOrder\.forEach\(\(floor, index\)/, 'テスト用ステージ選択は教材データから自動生成します');
