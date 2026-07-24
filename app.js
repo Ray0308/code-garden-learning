@@ -50,7 +50,7 @@ function setupLanguageMode() {
     document.querySelectorAll('[data-insert]').forEach(button => {
       button.dataset.insert = variantTools.fromPython(button.dataset.insert, activeLanguage);
     });
-    const keys = activeLanguage === 'java'
+    const keys = activeLanguage === 'java' || activeLanguage === 'javascript'
       ? [['    ', 'Tab'], ['()', '( )'], [';', ';'], ['{', '{'], ['}', '}'], ['\n', '↵']]
       : [['    ', 'Tab'], ['$', '$'], [';', ';'], ['{', '{'], ['}', '}'], ['\n', '↵']];
     document.querySelectorAll('[data-code-key]').forEach((button, index) => {

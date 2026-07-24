@@ -15,6 +15,11 @@
 
   function expression(source, language, names = new Set()) {
     let value = source.trim();
+    if (language === 'javascript') {
+      return value.replace(/\bTrue\b/g, 'true').replace(/\bFalse\b/g, 'false')
+        .replace(/\band\b/g, '&&').replace(/\bor\b/g, '||')
+        .replace(/\bint\(/g, 'parseInt(').replace(/\blen\(([^()]+)\)/g, '$1.length');
+    }
     if (language === 'java') {
       value = value.replace(/\bTrue\b/g, 'true').replace(/\bFalse\b/g, 'false')
         .replace(/\band\b/g, '&&').replace(/\bor\b/g, '||')
@@ -42,9 +47,11 @@
 
   function statement(text, language, names, declared) {
     const print = text.match(/^print\((.*)\)$/);
-    if (print) return language === 'java'
-      ? `System.out.println(${expression(print[1], language, names)});`
-      : `echo ${expression(print[1], language, names)};`;
+    if (print) {
+      if (language === 'java') return `System.out.println(${expression(print[1], language, names)});`;
+      if (language === 'javascript') return `console.log(${expression(print[1], language, names)});`;
+      return `echo ${expression(print[1], language, names)};`;
+    }
     const input = text.match(/^([A-Za-z_]\w*)\s*=\s*input\(\)$/);
     const load = text.match(/^([A-Za-z_]\w*)\s*=\s*load\((.*)\)$/);
     const assign = text.match(/^([A-Za-z_]\w*)\s*=\s*(.*)$/);
@@ -53,6 +60,11 @@
       const name = match[1];
       const rawValue = input ? 'input()' : load ? `load(${expression(load[2], language, names)})` : expression(assign[2], language, names);
       if (language === 'php') return `$${name} = ${rawValue};`;
+      if (language === 'javascript') {
+        const prefix = declared.has(name) ? '' : 'let ';
+        declared.add(name);
+        return `${prefix}${name} = ${rawValue};`;
+      }
       const prefix = declared.has(name) ? '' : 'var ';
       declared.add(name);
       return `${prefix}${name} = ${rawValue};`;
@@ -90,7 +102,9 @@
       if (loop) {
         output.push(language === 'java'
           ? `${prefix}for (int i = 0; i < ${loop[1]}; i++) {`
-          : `${prefix}for ($i = 0; $i < ${loop[1]}; $i++) {`);
+          : language === 'javascript'
+            ? `${prefix}for (let i = 0; i < ${loop[1]}; i++) {`
+            : `${prefix}for ($i = 0; $i < ${loop[1]}; $i++) {`);
         stack.push(indent + 4);
         continue;
       }
@@ -116,6 +130,10 @@
       ['items = [2, 4, 6]', 'var items = List.of(2, 4, 6)'], ['user["name"]', 'user.get("name")'],
       ['if score >= 60:', 'if (score >= 60) { ... }'], ['number % 2 == 0', 'number % 2 == 0'],
       ['for / if / %', 'for / if / %'], ['score = 10', 'var score = 10;']
+    ] : language === 'javascript' ? [
+      ['print(', 'console.log('], ['True', 'true'], ['False', 'false'], [' and ', ' && '], [' or ', ' || '],
+      ['int("12")', 'parseInt("12")'], ['len(items)', 'items.length'], ['items = [2, 4, 6]', 'let items = [2, 4, 6];'],
+      ['if score >= 60:', 'if (score >= 60) { ... }'], ['score = 10', 'let score = 10;']
     ] : [
       ['print(', 'echo '], ['True', 'true'], ['False', 'false'], [' and ', ' && '], [' or ', ' || '],
       ['int("12")', '(int) "12"'], ['len(items)', 'count($items)'], ['items[2]', '$items[2]'],
