@@ -59,18 +59,19 @@ function setupLanguageMode() {
     });
   }
 
-  const selector = document.querySelector('#languageModeSelect');
-  languageRegistry.listModes().forEach(mode => {
-    const option = document.createElement('option');
-    option.value = mode.id;
-    option.textContent = mode.label;
-    option.selected = mode.id === activeLanguage;
-    selector.append(option);
-  });
-  selector.addEventListener('change', () => {
-    if (!languageRegistry.hasMode(selector.value)) return;
-    try { localStorage.setItem(GAME.modeStorageKey, selector.value); } catch {}
-    window.location.reload();
+  document.querySelectorAll('[data-language-mode-select]').forEach(selector => {
+    languageRegistry.listModes().forEach(mode => {
+      const option = document.createElement('option');
+      option.value = mode.id;
+      option.textContent = mode.label;
+      option.selected = mode.id === activeLanguage;
+      selector.append(option);
+    });
+    selector.addEventListener('change', () => {
+      if (!languageRegistry.hasMode(selector.value)) return;
+      try { localStorage.setItem(GAME.modeStorageKey, selector.value); } catch {}
+      window.location.reload();
+    });
   });
 }
 

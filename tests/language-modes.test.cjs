@@ -11,6 +11,10 @@ require('../engines/brace-adapter.js');
 const java = require('../engines/java.js');
 const php = require('../engines/php.js');
 const gameSolutions = require('./solutions.cjs');
+const fs = require('node:fs');
+const path = require('node:path');
+const appSource = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
+const htmlSource = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 
 assert.deepEqual(registry.listModes().map(mode => mode.id), ['python', 'java', 'php']);
 for (const course of [javaCourse, phpCourse]) {
@@ -41,5 +45,8 @@ assert.match(javaCourse.levels[36].solution, /if \(score >= 60\) \{/, 'Javaの�
 assert.match(phpCourse.levels[36].solution, /if \(\$score >= 60\) \{/, 'PHPの条件分岐を使えます');
 assert.ok(java.compile('move()', { capabilities: ['move'] }).errors.length > 0, 'Javaはセミコロン忘れをエラーにします');
 assert.ok(php.compile('$score = 10', { capabilities: ['variables'] }).errors.length > 0, 'PHPはセミコロン忘れをエラーにします');
+assert.match(htmlSource, /id="titleLanguageModeSelect"[^>]+data-language-mode-select/, 'タイトル画面に言語選択が必要です');
+assert.equal((htmlSource.match(/data-language-mode-select/g) || []).length, 2, 'タイトルとゲーム画面の両方で言語を選べます');
+assert.match(appSource, /querySelectorAll\('\[data-language-mode-select\]'\)/, '2つの言語選択を同じ登録済みモードから生成します');
 
 console.log('Java・PHPを含む3言語×48階層の解析・動作一致に合格しました');
