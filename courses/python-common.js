@@ -46,8 +46,11 @@
     course.curriculum.push({ floor, language:'python', world:3, chapter, stage, title, topic, syntax, minutes:10 });
     course.levels[floor] = {
       prerequisite:floor - 1, capabilities:['move','action','print','variables','if','for','storage'],
-      title, mission, description, start:{x:3,y:7,direction:2}, exit:{x:3,y:5}, maxSteps:24,
-      obstacles:wallsExcept(['3,7','3,6','3,5']), starter:broken || '', goal:mission, challenge,
+      title, mission,
+      description:`${description} 課題の結果を${challenge.kind === 'storage' ? 'save()で保存' : 'print()で出力'}し、2歩先の階段でaction()を実行するとクリア。`,
+      start:{x:3,y:7,direction:2}, exit:{x:3,y:5}, maxSteps:24,
+      obstacles:wallsExcept(['3,7','3,6','3,5']), starter:broken || '',
+      goal:`${mission}。その後、2歩進んで階段でaction()を実行する`, challenge,
       support:{
         mode,
         instruction:mode === 'copy' ? 'お手本を入力し、値が作られる順番を確認しよう。'

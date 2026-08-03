@@ -462,8 +462,12 @@ async function execute(commandInfo) {
       showClear();
     } else if (level().npc && objectIndexAtFront([level().npc]) === 0) {
       setOutput('›', `門番「合言葉を入力して、扉へ出力してみろ」`);
+    } else if (state.x === level().exit.x && state.y === level().exit.y && !challengeComplete()) {
+      setOutput('!', `${line}行目: 階段には着きましたが、課題の計算・出力・保存結果がまだ一致していません`, 'warning');
+    } else if (state.x === level().exit.x && state.y === level().exit.y && level().mobs && state.resolvedMobs.length !== level().mobs.length) {
+      setOutput('!', `${line}行目: 未対応のMOBが残っています`, 'warning');
     } else {
-      setOutput('!', `${line}行目: ここには操作できるものがありません`, 'warning');
+      setOutput('!', `${line}行目: ここには操作できるものがありません。灯または階段の上で実行してください`, 'warning');
     }
   }
   if (command === 'input') {
@@ -631,9 +635,8 @@ function insertCode(command) {
   const startPosition = editor.selectionStart;
   const before = editor.value.slice(0, startPosition);
   const after = editor.value.slice(editor.selectionEnd);
-  const prefix = before && !before.endsWith('\n') ? '\n' : '';
-  editor.value = `${before}${prefix}${command}\n${after}`;
-  const cursor = startPosition + prefix.length + command.length + 1;
+  editor.value = `${before}${command}${after}`;
+  const cursor = startPosition + command.length;
   editor.focus();
   editor.setSelectionRange(cursor, cursor);
   updateLineNumbers();
@@ -733,9 +736,10 @@ stageOrder.forEach((floor, index) => {
   const button = document.createElement('button');
   button.type = 'button';
   button.dataset.testFloor = floor;
-  button.textContent = `${index + 1}`;
-  button.title = `${index + 1}. ${levels[floor].title}`;
-  button.setAttribute('aria-label', `ステージ${index + 1}：${levels[floor].title}`);
+  const floorLabel = floor === 0 ? 'T' : String(floor);
+  button.textContent = floorLabel;
+  button.title = floor === 0 ? `Tutorial. ${levels[floor].title}` : `FLOOR ${floor}. ${levels[floor].title}`;
+  button.setAttribute('aria-label', floor === 0 ? `Tutorial：${levels[floor].title}` : `FLOOR ${floor}：${levels[floor].title}`);
   button.addEventListener('click', () => startAdventure(floor, true));
   testFloorButtons.appendChild(button);
 });
