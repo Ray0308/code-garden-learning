@@ -210,6 +210,10 @@ for (const floor of Object.keys(levels).map(Number).filter(value => value >= 24)
 }
 assert.deepEqual([...new Set(curriculum.filter(item => item.world === 3).map(item => item.topic))].length >= 20, true, '共通編は十分な学習項目を含みます');
 assert.ok(curriculum.some(item => item.topic === '仮想保存') && curriculum.some(item => item.topic === '仮想読込'), '保存と読込を共通編に含みます');
+for (const floor of Object.keys(levels).map(Number).filter(value => value >= 24)) {
+  assert.match(levels[floor].description, /print\(\)で出力|save\(\)で保存/, `${floor}階層は課題値を出力または保存することを明記します`);
+  assert.match(levels[floor].goal, /2歩進んで階段でaction\(\)/, `${floor}階層は課題後の階段操作を明記します`);
+}
 assert.match(pythonEngine.formatError({ line: 2, text: '???' }), /^2行目:/, '言語エンジンが初心者向けエラーを整形します');
 assert.ok(pythonEngine.compile('for _ in range(2):\n    move()', { capabilities: ['move'] }).errors.length > 0, '未習得の構文は教材データに従って拒否します');
 assert.ok(pythonEngine.compile('print("閉じ忘れ)', { capabilities: ['print'] }).errors.length > 0, '引用符の閉じ忘れを構文エラーにします');
@@ -222,6 +226,7 @@ assert.ok(pythonEngine.compile('if mob == "enemy":\nelse:\n    sayHello()', { ca
 assert.ok(pythonEngine.compile('if mob == "enemy":\n    attack()\nelse:', { capabilities: ['if', 'attack'] }).errors.some(error => error.line === 3 && /else の中/.test(error.text)), '空のelseブロックを構文エラーにします');
 assert.match(appSource, /skipTutorial'\)\.addEventListener\('click', \(\) => startAdventure\(1, true\)\)/, 'チュートリアルを飛ばす場合はステージ1を解放して開始します');
 assert.match(appSource, /output\.replaceChildren\(prompt, document\.createTextNode\(` \$\{message\}`\)\)/, '出力内容はHTMLとして解釈せずテキスト表示します');
+assert.match(appSource, /editor\.value = `\$\{before\}\$\{command\}\$\{after\}`/, '入力補助ボタンはカーソル位置へ余計な改行なしで挿入します');
 assert.doesNotMatch(appSource, /output\.innerHTML\s*=.*message/, '利用者の出力をinnerHTMLへ渡してはいけません');
 assert.match(stylesSource, /@media\(max-height:500px\)[\s\S]*?\.runbar\{position:absolute;[^}]*bottom:0/, '短い画面では実行ボタンを画面内の下部へ固定します');
 assert.match(stylesSource, /@media\(max-height:500px\)[\s\S]*?\.learning-support\{max-height:52px;overflow-y:auto/, '短い画面では学習案内が実行ボタンを押し出さないようにします');

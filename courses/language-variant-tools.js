@@ -10,7 +10,7 @@
   }
 
   function phpVariables(source, names) {
-    return replaceOutsideStrings(source, part => part.replace(/\b[A-Za-z_]\w*\b/g, word => names.has(word) ? `$${word}` : word));
+    return replaceOutsideStrings(source, part => part.replace(/(?<!\$)\b[A-Za-z_]\w*\b/g, word => names.has(word) ? `$${word}` : word));
   }
 
   function expression(source, language, names = new Set()) {

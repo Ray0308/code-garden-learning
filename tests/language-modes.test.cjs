@@ -47,6 +47,9 @@ assert.match(javaCourse.levels[40].solution, /items\.get\(0\)/, 'Javaでリス�
 assert.match(javaCourse.levels[43].solution, /Map\.of\(/, 'JavaでMapを作れます');
 assert.match(phpCourse.levels[40].solution, /\$items = \[2, 4, 6\]/, 'PHPで配列を作れます');
 assert.match(phpCourse.levels[43].solution, /"name" => "Aoi"/, 'PHPで連想配列を作れます');
+for (const level of Object.values(phpCourse.levels)) {
+  assert.doesNotMatch(`${level.mission}\n${level.description}\n${level.goal}\n${level.solution}`, /\$\$[A-Za-z_]/, 'PHP教材で変数の$を二重に付けません');
+}
 assert.match(javaCourse.levels[36].solution, /if \(score >= 60\) \{/, 'Javaの条件分岐を使えます');
 assert.match(phpCourse.levels[36].solution, /if \(\$score >= 60\) \{/, 'PHPの条件分岐を使えます');
 assert.match(javascriptCourse.levels[24].solution, /let score = 10;/, 'JavaScriptでlet変数を使えます');
@@ -58,5 +61,29 @@ assert.ok(javascript.compile('let score = 10', { capabilities: ['variables'] }).
 assert.match(htmlSource, /id="titleLanguageModeSelect"[^>]+data-language-mode-select/, 'タイトル画面に言語選択が必要です');
 assert.equal((htmlSource.match(/data-language-mode-select/g) || []).length, 2, 'タイトルとゲーム画面の両方で言語を選べます');
 assert.match(appSource, /querySelectorAll\('\[data-language-mode-select\]'\)/, '2つの言語選択を同じ登録済みモードから生成します');
+assert.match(appSource, /floor === 0 \? 'T' : String\(floor\)/, 'テスト用階層ボタンはTutorialをT、通常階層を実際のFLOOR番号で表示します');
+
+const userWrittenJavaScript = `let score = 75;
+if(score >= 60){
+    console.log("pass");
+}
+else{
+    console.log("retry");
+}
+move();
+move();
+action();`;
+assert.deepEqual(javascript.compile(userWrittenJavaScript, { capabilities: javascriptCourse.levels[36].capabilities }).errors, [], '空白の置き方が異なる手入力JavaScriptも受理します');
+const userWrittenPhp = `$number = 8;
+if($number % 2 == 0){
+    echo "even";
+}
+else{
+    echo "odd";
+}
+move();
+move();
+action();`;
+assert.deepEqual(php.compile(userWrittenPhp, { capabilities: phpCourse.levels[37].capabilities }).errors, [], '手入力PHPの条件分岐と剰余演算を受理します');
 
 console.log('Python・Java・PHP・JavaScriptの4言語×48階層の解析・動作一致に合格しました');
