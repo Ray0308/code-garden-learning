@@ -578,6 +578,18 @@ async function runAll() {
   }
 }
 
+function finishStepRun() {
+  executionIndex = 0;
+  if (state.cleared) {
+    document.querySelector('#editorState').textContent = 'クリア';
+    setOutput('›', 'すべてのコードを実行しました');
+    return;
+  }
+  const message = incompleteMessage();
+  setOutput('×', message, 'error');
+  showFailure(message, 'incomplete');
+}
+
 async function runStep() {
   if (running) return;
   if (executionIndex === 0) {
@@ -590,17 +602,27 @@ async function runStep() {
       showFailure(message, 'syntax');
       return;
     }
+    if (!parsed.commands.length) {
+      const message = '実行できる命令がありません。コードを入力してから実行しよう。';
+      setOutput('×', message, 'error');
+      showFailure(message, 'syntax');
+      return;
+    }
     resetState(false);
     parsedCommands = parsed.commands;
   }
   if (executionIndex >= parsedCommands.length) {
-    executionIndex = 0;
-    setOutput('›', 'すべてのコードを実行しました');
+    finishStepRun();
     return;
   }
   const succeeded = await execute(parsedCommands[executionIndex]);
-  if (!succeeded) showFailure(output.textContent.replace(/^\s*×\s*/, '').trim(), 'runtime');
+  if (!succeeded) {
+    showFailure(output.textContent.replace(/^\s*×\s*/, '').trim(), 'runtime');
+    executionIndex = 0;
+    return;
+  }
   executionIndex++;
+  if (executionIndex >= parsedCommands.length) finishStepRun();
 }
 
 function updateLineNumbers() {
@@ -731,6 +753,10 @@ document.querySelector('#continueAdventure').hidden = loadProgress().cleared.len
 document.querySelector('#startTutorial').addEventListener('click', () => startAdventure(0));
 document.querySelector('#continueAdventure').addEventListener('click', continueAdventure);
 document.querySelector('#skipTutorial').addEventListener('click', () => startAdventure(1, true));
+const testFloorPicker = document.querySelector('.test-floor-picker');
+const enableTestPicker = new URLSearchParams(location.search).has('test')
+  || ['localhost', '127.0.0.1'].includes(location.hostname);
+if (!enableTestPicker) testFloorPicker.hidden = true;
 const testFloorButtons = document.querySelector('#testFloorButtons');
 stageOrder.forEach((floor, index) => {
   const button = document.createElement('button');
@@ -741,7 +767,7 @@ stageOrder.forEach((floor, index) => {
   button.title = floor === 0 ? `Tutorial. ${levels[floor].title}` : `FLOOR ${floor}. ${levels[floor].title}`;
   button.setAttribute('aria-label', floor === 0 ? `Tutorial：${levels[floor].title}` : `FLOOR ${floor}：${levels[floor].title}`);
   button.addEventListener('click', () => startAdventure(floor, true));
-  testFloorButtons.appendChild(button);
+  if (enableTestPicker) testFloorButtons.appendChild(button);
 });
 document.querySelector('#lessonStart').addEventListener('click', () => { document.querySelector('#lessonModal').classList.remove('show'); document.querySelector('#lessonModal').setAttribute('aria-hidden', 'true'); });
 editor.addEventListener('input', updateLineNumbers);
