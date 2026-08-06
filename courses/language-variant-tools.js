@@ -95,7 +95,7 @@
       }
       const prefix = ' '.repeat(stack.length * 4);
       if (trimmed.startsWith('#')) {
-        output.push(`${prefix}//${trimmed.slice(1)}`);
+        output.push(`${prefix}//${trimmed.slice(1).replace(/range\(\)/g, 'for文')}`);
         continue;
       }
       const loop = trimmed.match(/^for\s+_\s+in\s+range\((\d+)\):$/);
@@ -135,15 +135,26 @@
       ['int("12")', 'parseInt("12")'], ['len(items)', 'items.length'], ['items = [2, 4, 6]', 'let items = [2, 4, 6];'],
       ['if score >= 60:', 'if (score >= 60) { ... }'], ['score = 10', 'let score = 10;']
     ] : [
-      ['print(', 'echo '], ['True', 'true'], ['False', 'false'], [' and ', ' && '], [' or ', ' || '],
+      ['True', 'true'], ['False', 'false'], [' and ', ' && '], [' or ', ' || '],
       ['int("12")', '(int) "12"'], ['len(items)', 'count($items)'], ['items[2]', '$items[2]'],
       ['items = [2, 4, 6]', '$items = [2, 4, 6];'], ['user["name"]', '$user["name"]'],
       ['if score >= 60:', 'if ($score >= 60) { ... }'], ['number % 2 == 0', '$number % 2 == 0'],
       ['score = 10', '$score = 10;']
     ];
     let result = syntax;
-    for (const [before, after] of table) result = result.replace(before, after);
-    if (language === 'php') result = phpVariables(result, new Set(['score','name','ready','number','total','items','level','age','has_key','has_pass','key','passcode','user']));
+    for (const [before, after] of table) result = result.split(before).join(after);
+    if (language === 'java') {
+      result = result.replace(/for _ in range\((\w+)\):/g, 'for (int i = 0; i < $1; i++) {')
+        .replace(/range\(\)の回数/g, 'for文の繰り返し回数').replace(/range\(\)/g, 'for文');
+    } else if (language === 'javascript') {
+      result = result.replace(/for _ in range\((\w+)\):/g, 'for (let i = 0; i < $1; i++) {')
+        .replace(/range\(\)の回数/g, 'for文の繰り返し回数').replace(/range\(\)/g, 'for文');
+    } else {
+      result = result.replace(/print\(([^()\n]*)\)/g, 'echo $1')
+        .replace(/for _ in range\((\w+)\):/g, 'for ($i = 0; $i < $1; $i++) {')
+        .replace(/range\(\)の回数/g, 'for文の繰り返し回数').replace(/range\(\)/g, 'for文');
+      result = phpVariables(result, new Set(['score','name','ready','number','total','items','level','age','has_key','has_pass','key','passcode','user']));
+    }
     return result;
   }
 
@@ -167,7 +178,10 @@
         level.support.hints = (level.support.hints || []).map(hint => translatedSyntax(hint, options.id));
       }
     }
-    course.curriculum.forEach(item => { item.syntax = translatedSyntax(item.syntax, options.id); });
+    course.curriculum.forEach(item => {
+      item.topic = translatedSyntax(item.topic, options.id);
+      item.syntax = translatedSyntax(item.syntax, options.id);
+    });
     return course;
   }
 

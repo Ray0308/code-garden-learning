@@ -69,7 +69,7 @@
         indent++;
         continue;
       }
-      if (text === 'else {') {
+      if (/^else\s*{$/.test(text)) {
         output.push(`${' '.repeat(indent * 4)}else:`);
         indent++;
         continue;
@@ -93,7 +93,6 @@
       }
       if (text.endsWith('{')) {
         output.push(`${' '.repeat(indent * 4)}# unsupported block`);
-        indent++;
         continue;
       }
       if (text.endsWith(';')) text = text.slice(0, -1).trim();
@@ -124,6 +123,16 @@
       parseExpression(source) { return python.parseExpression(normalizeExpression(source, id)); },
       evaluateExpression: python.evaluateExpression,
       compile(source, context) {
+        const invalidForErrors = source.replace(/\r/g, '').split('\n').flatMap((raw, index) => {
+          const text = raw.trim();
+          if (!/^for\s*\(/.test(text)) return [];
+          const valid = id === 'java'
+            ? /^for\s*\(\s*int\s+\w+\s*=\s*0\s*;\s*\w+\s*<\s*\d+\s*;\s*\w+\+\+\s*\)\s*\{$/.test(text)
+            : id === 'javascript'
+              ? /^for\s*\(\s*let\s+\w+\s*=\s*0\s*;\s*\w+\s*<\s*\d+\s*;\s*\w+\+\+\s*\)\s*\{$/.test(text)
+              : /^for\s*\(\s*\$\w+\s*=\s*0\s*;\s*\$\w+\s*<\s*\d+\s*;\s*\$\w+\+\+\s*\)\s*\{$/.test(text);
+          return valid ? [] : [{ line: index + 1, text: 'for文の初期値・条件・更新式を確認してください（例: 0から開始）' }];
+        });
         const punctuationErrors = source.replace(/\r/g, '').split('\n').flatMap((raw, index) => {
           const text = raw.trim();
           if (!text || text.startsWith('//') || text === '<?php' || text === '?>'
@@ -131,7 +140,7 @@
           return text.endsWith(';') ? [] : [{ line: index + 1, text: '文の最後にセミコロン ; が必要です' }];
         });
         const result = python.compile(normalize(source, id), context);
-        return { commands: result.commands, errors: [...punctuationErrors, ...result.errors] };
+        return { commands: result.commands, errors: [...invalidForErrors, ...punctuationErrors, ...result.errors] };
       },
       formatError(error) {
         return `${error.line}行目: ${error.text}`;

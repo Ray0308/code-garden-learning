@@ -216,6 +216,7 @@ for (const floor of Object.keys(levels).map(Number).filter(value => value >= 24)
 }
 assert.match(pythonEngine.formatError({ line: 2, text: '???' }), /^2行目:/, '言語エンジンが初心者向けエラーを整形します');
 assert.ok(pythonEngine.compile('for _ in range(2):\n    move()', { capabilities: ['move'] }).errors.length > 0, '未習得の構文は教材データに従って拒否します');
+assert.ok(pythonEngine.compile('move()\nmove()\naction()', { capabilities: levels[23].capabilities, level: levels[23] }).errors.some(error => /for を使って/.test(error.text)), '三影の門は命令の羅列だけではクリアできません');
 assert.ok(pythonEngine.compile('print("閉じ忘れ)', { capabilities: ['print'] }).errors.length > 0, '引用符の閉じ忘れを構文エラーにします');
 assert.deepEqual(pythonEngine.compile('attack()', { capabilities: ['attack'] }).commands.map(item => item.command), ['attack()'], 'attack()を実行キューへ追加します');
 assert.deepEqual(pythonEngine.compile('sayHello()', { capabilities: ['sayHello'] }).commands.map(item => item.command), ['sayHello()'], 'sayHello()を実行キューへ追加します');

@@ -49,6 +49,14 @@ assert.match(phpCourse.levels[40].solution, /\$items = \[2, 4, 6\]/, 'PHPで配�
 assert.match(phpCourse.levels[43].solution, /"name" => "Aoi"/, 'PHPで連想配列を作れます');
 for (const level of Object.values(phpCourse.levels)) {
   assert.doesNotMatch(`${level.mission}\n${level.description}\n${level.goal}\n${level.solution}`, /\$\$[A-Za-z_]/, 'PHP教材で変数の$を二重に付けません');
+  assert.doesNotMatch(JSON.stringify(level), /echo\s+\)/, 'PHP教材に閉じかっこだけ残ったechoを生成しません');
+}
+for (const course of [javaCourse, phpCourse, javascriptCourse]) {
+  assert.doesNotMatch(JSON.stringify(course), /range\(\)/, `${course.id}教材にPython固有のrange()表記を残しません`);
+  for (const [floor, level] of Object.entries(course.levels)) {
+    if (Number(floor) < 24 || !['change', 'debug'].includes(level.support?.mode)) continue;
+    assert.doesNotMatch(level.support.initialCode.trim(), /^(#|\/\/)/, `${course.id} ${Number(floor) + 1}階の変更・修正課題には作業対象コードが必要です`);
+  }
 }
 assert.match(javaCourse.levels[36].solution, /if \(score >= 60\) \{/, 'Javaの条件分岐を使えます');
 assert.match(phpCourse.levels[36].solution, /if \(\$score >= 60\) \{/, 'PHPの条件分岐を使えます');
@@ -85,5 +93,9 @@ move();
 move();
 action();`;
 assert.deepEqual(php.compile(userWrittenPhp, { capabilities: phpCourse.levels[37].capabilities }).errors, [], '手入力PHPの条件分岐と剰余演算を受理します');
+assert.deepEqual(php.compile(userWrittenPhp.replace('else{', 'else {'), { capabilities: phpCourse.levels[37].capabilities }).errors, [], 'PHPのelseは空白の有無にかかわらず受理します');
+const invalidJavaFor = java.compile('for(int i ; i < 3; i++){\n    move();\n}', { capabilities: ['for', 'move'] });
+assert.ok(invalidJavaFor.errors.some(error => /初期値/.test(error.text)), 'Javaの不正なfor文は初期値を案内します');
+assert.ok(invalidJavaFor.errors.every(error => !/インデントが多すぎ/.test(error.text)), 'Javaの不正なfor文をインデントエラーと誤案内しません');
 
 console.log('Python・Java・PHP・JavaScriptの4言語×48階層の解析・動作一致に合格しました');

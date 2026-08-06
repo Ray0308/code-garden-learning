@@ -138,6 +138,10 @@
       const capabilities = new Set(context.capabilities || []);
       const errors = [];
       const lines = source.split('\n').map(raw => raw.replace(/\t/g, '    '));
+      if ((context.level?.requiredConstructs || []).includes('for')
+        && !lines.some(raw => /^\s*for\s+_\s+in\s+range\(\d+\):\s*$/.test(raw))) {
+        errors.push({ line: 1, text: 'このステージは for を使って繰り返してください' });
+      }
       const unavailable = (name, line) => {
         if (!capabilities.has(name)) errors.push({ line, text: `${name} はこのステージではまだ使えません` });
       };
