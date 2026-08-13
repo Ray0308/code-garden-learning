@@ -108,18 +108,19 @@
             <span><small>REFERENCE</small>使える関数</span><b>＋</b>
           </button>
           <div class="reference-body" id="referenceBody" hidden>
-            <button class="function-row" data-insert="move()"><span class="furigana-code"><ruby><code>move</code><rt>前へ進む</rt></ruby><ruby><code>()</code><rt>実行する</rt></ruby></span><span>正面へ1マス進む</span></button>
-            <button class="function-row" data-insert="turnLeft()"><span class="furigana-code"><ruby><code>turnLeft</code><rt>左を向く</rt></ruby><ruby><code>()</code><rt>実行する</rt></ruby></span><span>その場で左へ向きを変える</span></button>
-            <button class="function-row" data-insert="turnRight()"><span class="furigana-code"><ruby><code>turnRight</code><rt>右を向く</rt></ruby><ruby><code>()</code><rt>実行する</rt></ruby></span><span>その場で右へ向きを変える</span></button>
-            <button class="function-row" data-insert="action()"><span class="furigana-code"><ruby><code>action</code><rt>操作する</rt></ruby><ruby><code>()</code><rt>実行する</rt></ruby></span><span>足元の灯や階段を操作する</span></button>
-            <button class="function-row" id="loopReference" data-insert="for _ in range(3):&#10;    move()" hidden><span class="furigana-code"><ruby><code>for</code><rt>繰り返す</rt></ruby> <ruby><code>_</code><rt>使わない値</rt></ruby> <code>in</code> <ruby><code>range(3)</code><rt>3回分</rt></ruby><code>:</code></span><span>_も変数。今回は繰り返しで受け取る値を使わないため、この名前にしている</span></button>
-            <button class="function-row" id="printReference" data-insert="print(&quot;&quot;)" hidden><span class="furigana-code"><ruby><code>print</code><rt>出力する</rt></ruby><code>(</code><ruby><code>"文字列"</code><rt>出力する内容</rt></ruby><code>)</code></span><span>文字列や変数の値を相手へ出力する</span></button>
-            <button class="function-row" id="inputReference" data-insert="value = input()" hidden><span class="furigana-code"><ruby><code>value</code><rt>変数へ入れる</rt></ruby> <ruby><code>=</code><rt>代入する</rt></ruby> <ruby><code>input</code><rt>入力を受け取る</rt></ruby><ruby><code>()</code><rt>実行する</rt></ruby></span><span>正面の相手から入力を受け取り、変数へ保存する</span></button>
-            <button class="function-row" id="attackReference" data-insert="attack()" hidden><span class="furigana-code"><ruby><code>attack</code><rt>攻撃する</rt></ruby><ruby><code>()</code><rt>実行する</rt></ruby></span><span>正面にいる敵へ攻撃する</span></button>
-            <button class="function-row" id="sayHelloReference" data-insert="sayHello()" hidden><span class="furigana-code"><ruby><code>sayHello</code><rt>こんにちはと言う</rt></ruby><ruby><code>()</code><rt>実行する</rt></ruby></span><span>正面にいる同族へ挨拶する</span></button>
-            <button class="function-row" id="ifReference" data-insert="if mob == &quot;enemy&quot;:&#10;    attack()&#10;else:&#10;    sayHello()" hidden><span class="furigana-code"><ruby><code>if</code><rt>もし</rt></ruby> <ruby><code>mob</code><rt>MOBの種類</rt></ruby> <ruby><code>==</code><rt>等しい</rt></ruby> <ruby><code>"enemy"</code><rt>敵</rt></ruby><code>:</code></span><span>条件が正しいときだけ字下げした命令を実行する</span></button>
-            <button class="function-row" id="variableReference" data-insert="value = 10" hidden><span class="furigana-code"><code>value = 10</code></span><span>値へ名前を付けて変数に保存する</span></button>
-            <button class="function-row" id="storageReference" data-insert="save(&quot;key&quot;, value)&#10;value = load(&quot;key&quot;)" hidden><span class="furigana-code"><code>save / load</code></span><span>教材内の仮想ファイルへ値を保存・読込する</span></button>
+            <button class="function-row" data-reference="move" data-capability="move"><span class="furigana-code"></span><span>正面へ1マス進む</span></button>
+            <button class="function-row" data-reference="turnLeft" data-capability="turn"><span class="furigana-code"></span><span>その場で左へ向きを変える</span></button>
+            <button class="function-row" data-reference="turnRight" data-capability="turn"><span class="furigana-code"></span><span>その場で右へ向きを変える</span></button>
+            <button class="function-row" data-reference="action" data-capability="action"><span class="furigana-code"></span><span>足元の灯や階段を操作する</span></button>
+            <button class="function-row" data-reference="for" data-capability="for" hidden><span class="furigana-code"></span><span>同じ処理を指定した回数だけ繰り返す</span></button>
+            <button class="function-row" data-reference="print" data-capability="print" hidden><span class="furigana-code"></span><span>文字列や変数の値を出力する</span></button>
+            <button class="function-row" data-reference="input" data-capability="input" hidden><span class="furigana-code"></span><span>正面の相手から入力を受け取り、変数へ保存する</span></button>
+            <button class="function-row" data-reference="attack" data-capability="attack" hidden><span class="furigana-code"></span><span>正面にいる敵へ攻撃する</span></button>
+            <button class="function-row" data-reference="sayHello" data-capability="sayHello" hidden><span class="furigana-code"></span><span>正面にいる同族へ挨拶する</span></button>
+            <button class="function-row" data-reference="if" data-capability="if" hidden><span class="furigana-code"></span><span>条件によって実行する処理を分ける</span></button>
+            <button class="function-row" data-reference="variables" data-capability="variables" hidden><span class="furigana-code"></span><span>値へ名前を付けて変数に保存する</span></button>
+            <button class="function-row" data-reference="conversion" data-concept="conversion" hidden><span class="furigana-code"></span><span>文字列を整数へ変換する</span></button>
+            <button class="function-row" data-reference="storage" data-capability="storage" hidden><span class="furigana-code"></span><span>教材内の仮想ファイルへ値を保存・読込する</span></button>
             <p class="reference-guide">関数を押すと、ふりがなプログラミング形式の解説画面が開きます。</p>
           </div>
         </section>

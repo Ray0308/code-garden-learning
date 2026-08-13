@@ -143,6 +143,14 @@
     ];
     let result = syntax;
     for (const [before, after] of table) result = result.split(before).join(after);
+    const conversionName = language === 'java' ? 'Integer.parseInt()'
+      : language === 'javascript' ? 'parseInt()' : '(int)';
+    const lengthName = language === 'java' ? 'size()'
+      : language === 'javascript' ? 'length' : 'count()';
+    result = result.replace(/\bint\(\)/g, conversionName)
+      .replace(/\blen\(\)/g, lengthName)
+      .replace(/\band\b/g, '&&')
+      .replace(/\bor\b/g, '||');
     if (language === 'java') {
       result = result.replace(/for _ in range\((\w+)\):/g, 'for (int i = 0; i < $1; i++) {')
         .replace(/range\(\)の回数/g, 'for文の繰り返し回数').replace(/range\(\)/g, 'for文');
@@ -153,7 +161,10 @@
       result = result.replace(/print\(([^()\n]*)\)/g, 'echo $1')
         .replace(/for _ in range\((\w+)\):/g, 'for ($i = 0; $i < $1; $i++) {')
         .replace(/range\(\)の回数/g, 'for文の繰り返し回数').replace(/range\(\)/g, 'for文');
-      result = phpVariables(result, new Set(['score','name','ready','number','total','items','level','age','has_key','has_pass','key','passcode','user']));
+      result = phpVariables(result, new Set([
+        'score','name','ready','number','total','items','level','age','has_key','has_pass',
+        'key','passcode','user','mob','value','remainder','answer','message','price','count','result'
+      ]));
     }
     return result;
   }

@@ -20,7 +20,13 @@ const { course, engine: languageEngine } = languageMode;
 const { curriculum, levels } = course;
 const { columns: COLS, rows: ROWS } = content;
 const stageOrder = curriculum.map(item => item.floor).filter(floor => levels[floor]);
-const supportLabels = { copy: '写経', change: '変更', debug: 'エラー修正', fromScratch: '自力入力' };
+const supportLabels = { copy: '写経', change: '変更', debug: 'コード修正', fromScratch: '自力入力' };
+const referenceSamples = {
+  python:{move:'move()',turnLeft:'turnLeft()',turnRight:'turnRight()',action:'action()',for:'for _ in range(3):\n    move()',print:'print("文字列")',input:'value = input()',attack:'attack()',sayHello:'sayHello()',if:'if mob == "enemy":\n    attack()\nelse:\n    sayHello()',variables:'value = 10',conversion:'value = int("12")',storage:'save("key", value)\nvalue = load("key")'},
+  java:{move:'move();',turnLeft:'turnLeft();',turnRight:'turnRight();',action:'action();',for:'for (int i = 0; i < 3; i++) {\n    move();\n}',print:'System.out.println("文字列");',input:'var value = input();',attack:'attack();',sayHello:'sayHello();',if:'if (mob == "enemy") {\n    attack();\n} else {\n    sayHello();\n}',variables:'var value = 10;',conversion:'var value = Integer.parseInt("12");',storage:'save("key", value);\nvar value = load("key");'},
+  php:{move:'move();',turnLeft:'turnLeft();',turnRight:'turnRight();',action:'action();',for:'for ($i = 0; $i < 3; $i++) {\n    move();\n}',print:'echo "文字列";',input:'$value = input();',attack:'attack();',sayHello:'sayHello();',if:'if ($mob == "enemy") {\n    attack();\n} else {\n    sayHello();\n}',variables:'$value = 10;',conversion:'$value = (int) "12";',storage:'save("key", $value);\n$value = load("key");'},
+  javascript:{move:'move();',turnLeft:'turnLeft();',turnRight:'turnRight();',action:'action();',for:'for (let i = 0; i < 3; i++) {\n    move();\n}',print:'console.log("文字列");',input:'let value = input();',attack:'attack();',sayHello:'sayHello();',if:'if (mob == "enemy") {\n    attack();\n} else {\n    sayHello();\n}',variables:'let value = 10;',conversion:'let value = parseInt("12");',storage:'save("key", value);\nlet value = load("key");'}
+};
 const directions = [
   { dx: 0, dy: 1, label: '下', sprite: 'assets/character/main-down.png' },
   { dx: 1, dy: 0, label: '右', sprite: 'assets/character/main-right.png' },
@@ -45,11 +51,12 @@ function setupLanguageMode() {
   document.querySelector('#editorFileName').textContent = meta.fileName;
   document.querySelector('#gameFunctionNote').textContent = meta.functionNote;
   editor.setAttribute('aria-label', meta.editorLabel);
+  document.querySelectorAll('[data-reference]').forEach(button => {
+    const sample = referenceSamples[activeLanguage][button.dataset.reference];
+    button.dataset.insert = sample;
+    button.querySelector('.furigana-code').textContent = sample;
+  });
   if (activeLanguage !== 'python') {
-    const variantTools = window.CODE_GARDEN_VARIANT_TOOLS;
-    document.querySelectorAll('[data-insert]').forEach(button => {
-      button.dataset.insert = variantTools.fromPython(button.dataset.insert, activeLanguage);
-    });
     const keys = activeLanguage === 'java' || activeLanguage === 'javascript'
       ? [['    ', 'Tab'], ['()', '( )'], [';', ';'], ['{', '{'], ['}', '}'], ['\n', '↵']]
       : [['    ', 'Tab'], ['$', '$'], [';', ';'], ['{', '{'], ['}', '}'], ['\n', '↵']];
@@ -124,7 +131,8 @@ function recordAttempt() {
 
 function showNextHint() {
   const hints = level().support.hints || [];
-  if (currentHintIndex >= hints.length) return;
+  if (!hints.length) return;
+  if (currentHintIndex >= hints.length) currentHintIndex = 0;
   const hintNumber = currentHintIndex + 1;
   setOutput('?', `ヒント ${hintNumber}/${hints.length}: ${hints[currentHintIndex]}`, 'warning');
   currentHintIndex++;
@@ -135,8 +143,8 @@ function showNextHint() {
   progress.updatedAt = new Date().toISOString();
   localStorage.setItem(progressKey(), JSON.stringify(progress));
   const hintButton = document.querySelector('#hintBtn');
-  hintButton.disabled = currentHintIndex >= hints.length;
-  hintButton.textContent = hintButton.disabled ? 'ヒント表示済み' : '次のヒント';
+  hintButton.disabled = false;
+  hintButton.textContent = currentHintIndex >= hints.length ? '最初のヒントへ' : '次のヒント';
 }
 
 function prepareLevel(selectedLevel) {
@@ -154,16 +162,10 @@ function selectFloor(floor, bypassUnlock = false) {
   prepareLevel(selectedLevel);
   const lesson = curriculum.find(item => item.floor === floor);
   const stageLabel = lesson?.stage ? `${lesson.chapter}-${lesson.stage}` : String(floor).padStart(2, '0');
-  document.querySelector('.chapter small').textContent = `WORLD ${lesson?.world || 1} / STAGE ${stageLabel}`;
+  document.querySelector('.chapter small').textContent = `${floor === 0 ? 'TUTORIAL' : `FLOOR ${floor}`} / WORLD ${lesson?.world || 1} STAGE ${stageLabel}`;
   document.querySelector('.chapter strong').textContent = level().title;
-  document.querySelector('#loopReference').hidden = !selectedLevel.capabilities.includes('for');
-  document.querySelector('#printReference').hidden = !selectedLevel.capabilities.includes('print');
-  document.querySelector('#inputReference').hidden = !selectedLevel.capabilities.includes('input');
-  document.querySelector('#attackReference').hidden = !selectedLevel.capabilities.includes('attack');
-  document.querySelector('#sayHelloReference').hidden = !selectedLevel.capabilities.includes('sayHello');
-  document.querySelector('#ifReference').hidden = !selectedLevel.capabilities.includes('if');
-  document.querySelector('#variableReference').hidden = !selectedLevel.capabilities.includes('variables');
-  document.querySelector('#storageReference').hidden = !selectedLevel.capabilities.includes('storage');
+  document.querySelectorAll('[data-capability]').forEach(button => { button.hidden = !selectedLevel.capabilities.includes(button.dataset.capability); });
+  document.querySelectorAll('[data-concept]').forEach(button => { button.hidden = !(selectedLevel.concepts || []).includes(button.dataset.concept); });
   document.querySelector('#learningSupport').dataset.mode = selectedLevel.support.mode;
   document.querySelector('#supportModeLabel').textContent = supportLabels[selectedLevel.support.mode];
   document.querySelector('#supportInstruction').textContent = selectedLevel.support.instruction;
@@ -246,7 +248,7 @@ function showFailure(message, kind = 'runtime') {
 }
 
 function incompleteMessage() {
-  if (level().challenge && !challengeComplete()) return level().challenge.hint || '課題の計算結果を確認して、もう一度実行しよう。';
+  if (level().challenge && !challengeComplete()) return level().challenge.hint || '課題で指定された変数・処理・結果を確認して、もう一度実行しよう。';
   if (level().target && !state.collected) return '灯をまだ回収していません。灯のあるマスで action() を実行しよう。';
   if (level().door && !state.doorOpen) return '扉がまだ閉まっています。扉の正面で指定された出力を実行しよう。';
   if (level().mobs && state.resolvedMobs.length < level().mobs.length) return `未対応のMOBがあと${level().mobs.length - state.resolvedMobs.length}体います。正面から対応しよう。`;
@@ -356,9 +358,12 @@ function renderDungeon() {
   } else if (level().mobs) {
     document.querySelector('#statLabel').textContent = '対応したMOB';
     document.querySelector('#statValue').textContent = `${state.resolvedMobs.length} / ${level().mobs.length}`;
-  } else {
+  } else if (level().door) {
     document.querySelector('#statLabel').textContent = '扉の状態';
     document.querySelector('#statValue').textContent = state.doorOpen ? 'OPEN' : 'LOCKED';
+  } else {
+    document.querySelector('#statLabel').textContent = '進行状況';
+    document.querySelector('#statValue').textContent = state.cleared ? 'CLEAR' : '未達成';
   }
 }
 
@@ -397,7 +402,10 @@ function challengeComplete() {
   const actual = challenge.kind === 'variable' ? state.variables[challenge.name]
     : challenge.kind === 'storage' ? state.storage[challenge.key]
       : state.outputValues.at(-1);
-  return JSON.stringify(actual) === JSON.stringify(challenge.expected);
+  const resultMatches = JSON.stringify(actual) === JSON.stringify(challenge.expected);
+  const variablesMatch = Object.entries(challenge.variables || {}).every(([name, expected]) =>
+    JSON.stringify(state.variables[name]) === JSON.stringify(expected));
+  return resultMatches && variablesMatch;
 }
 
 async function execute(commandInfo) {
@@ -557,6 +565,8 @@ async function runAll() {
   parsedCommands = parsed.commands;
   running = true;
   document.querySelector('#runBtn').disabled = true;
+  document.querySelector('#stepBtn').disabled = true;
+  document.querySelector('#resetBtn').disabled = true;
   document.querySelector('#editorState').textContent = '実行中';
   let failed = false;
   for (let index = 0; index < parsedCommands.length; index++) {
@@ -569,6 +579,8 @@ async function runAll() {
   }
   running = false;
   document.querySelector('#runBtn').disabled = false;
+  document.querySelector('#stepBtn').disabled = false;
+  document.querySelector('#resetBtn').disabled = false;
   if (!failed && state.cleared) {
     document.querySelector('#editorState').textContent = 'クリア';
   } else if (!failed) {
@@ -664,7 +676,7 @@ function insertCode(command) {
   updateLineNumbers();
 }
 
-document.querySelectorAll('[data-insert]').forEach(button => button.addEventListener('click', () => {
+document.querySelectorAll('[data-reference]').forEach(button => button.addEventListener('click', () => {
   pendingInsert = button.dataset.insert;
   const modal = document.querySelector('#functionModal');
   const annotatedCode = button.querySelector('.furigana-code');

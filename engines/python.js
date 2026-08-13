@@ -138,9 +138,24 @@
       const capabilities = new Set(context.capabilities || []);
       const errors = [];
       const lines = source.split('\n').map(raw => raw.replace(/\t/g, '    '));
-      if ((context.level?.requiredConstructs || []).includes('for')
-        && !lines.some(raw => /^\s*for\s+_\s+in\s+range\(\d+\):\s*$/.test(raw))) {
-        errors.push({ line: 1, text: 'このステージは for を使って繰り返してください' });
+      const constructMatchers = {
+        for: /^\s*for\s+_\s+in\s+range\(\d+\):\s*$/m,
+        if: /^\s*if\s+.+:\s*$/m,
+        conversion: /\bint\s*\(/,
+        list: /=\s*\[/,
+        dictionary: /=\s*\{/,
+        length: /\blen\s*\(/,
+        save: /\bsave\s*\(/,
+        load: /\bload\s*\(/
+      };
+      const constructLabels = {
+        for:'for', if:'if', conversion:'int()', list:'リスト', dictionary:'辞書',
+        length:'len()', save:'save()', load:'load()'
+      };
+      for (const name of context.level?.requiredConstructs || []) {
+        if (constructMatchers[name] && !constructMatchers[name].test(source)) {
+          errors.push({ line: 1, text: `このステージは ${constructLabels[name]} を使ってください` });
+        }
       }
       const unavailable = (name, line) => {
         if (!capabilities.has(name)) errors.push({ line, text: `${name} はこのステージではまだ使えません` });

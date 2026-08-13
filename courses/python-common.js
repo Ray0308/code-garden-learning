@@ -26,10 +26,10 @@
     ['数値で分かれる道','数値の条件分岐','if score >= 60:','合格ならpassを出力せよ','計算・比較の結果でもifを使える。','score = 75\nif score >= 60:\n    print("pass")\nelse:\n    print("retry")',{kind:'output',expected:'pass'}],
     ['偶数の門','演算と条件分岐','number % 2 == 0','numberを8にし、偶数なら"even"を出力せよ','2で割った余りが0なら偶数。','number = 8\nif number % 2 == 0:\n    print("even")\nelse:\n    print("odd")',{kind:'output',expected:'even'}],
     ['繰り返す計算','反復と変数','total = total + 2','2を4回足して8を作れ','繰り返しの中で変数を更新しよう。','total = 0\nfor _ in range(4):\n    total = total + 2\nprint(total)',{kind:'output',expected:8}],
-    ['制御の総合門','演算・反復・条件分岐','for / if / %','4を3回足して12なら"clear"を出力せよ','反復で値を作り、比較して結果を出力しよう。','total = 0\nfor _ in range(3):\n    total = total + 4\nif total == 12:\n    print("clear")\nelse:\n    print("retry")',{kind:'output',expected:'clear'}],
+    ['制御の総合門','演算・反復・条件分岐','for / if / +','4を3回足して12なら"clear"を出力せよ','反復で値を作り、比較して結果を出力しよう。','total = 0\nfor _ in range(3):\n    total = total + 4\nif total == 12:\n    print("clear")\nelse:\n    print("retry")',{kind:'output',expected:'clear'}],
     ['仲間を並べる箱','リスト','items = [2, 4, 6]','リストの先頭を出力せよ','リストは複数の値を順番に保存する。番号は0から始まる。','items = [2, 4, 6]\nprint(items[0])',{kind:'output',expected:2}],
     ['三番目の記録','リストの添字','items[2]','["red", "blue", "gold"]の3番目、"gold"を出力せよ','角かっこの番号で特定の要素を取り出せる。','items = ["red", "blue", "gold"]\nprint(items[2])',{kind:'output',expected:'gold'}],
-    ['数を数える術','len()','len(items)','[10, 20, 30, 40]の件数4を出力せよ','len()は文字列やリストの要素数を返す。','items = [10, 20, 30, 40]\nprint(len(items))',{kind:'output',expected:4}],
+    ['数を数える術','len()','len(items)','[10, 20, 30, 40]の要素数4を出力せよ','len()は文字列やリストの要素数を返す。','items = [10, 20, 30, 40]\nprint(len(items))',{kind:'output',expected:4}],
     ['名前で探す台帳','辞書','user["name"]','辞書のキー"name"から"Aoi"を取り出して出力せよ','辞書はキーと値を組にして保存する。','user = {"name": "Aoi", "score": 80}\nprint(user["name"])',{kind:'output',expected:'Aoi'}],
     ['記録を保存する','仮想保存','save("score", score)','scoreを仮想ファイルへ保存せよ','save()は教材内の仮想ファイルへ値を保存する。','score = 95\nsave("score", score)',{kind:'storage',key:'score',expected:95}],
     ['記録を読み戻す','仮想読込','load("message")','"saved"をmessageへ保存し、読み戻して出力せよ','load()で保存済みの値を読み込める。','save("message", "saved")\nmessage = load("message")\nprint(message)',{kind:'output',expected:'saved'}],
@@ -50,6 +50,22 @@
     45:'save("message", "before")\nmessage = load("message")\nprint(message)',
     47:'price = 350\ncount = 4\ntotal = price + count\nif total >= 1000:\n    result = "success"\nelse:\n    result = "retry"\nsave("result", result)\nprint(result)'
   };
+  const challengeVariables = {
+    24:{score:10}, 25:{name:'Fukuro'}, 26:{ready:true}, 27:{number:12},
+    28:{total:12}, 29:{items:10}, 30:{remainder:2}, 31:{answer:20},
+    32:{score:10}, 33:{level:7}, 34:{age:20,ready:true},
+    35:{has_key:false,has_pass:true}, 36:{score:75}, 37:{number:8},
+    38:{total:8}, 39:{total:12}, 40:{items:[2,4,6]},
+    41:{items:['red','blue','gold']}, 42:{items:[10,20,30,40]},
+    43:{user:{name:'Aoi',score:80}}, 44:{score:95}, 45:{message:'saved'},
+    46:{price:200,count:3,total:600},
+    47:{price:350,count:4,total:1400,result:'success'}
+  };
+  const requiredConstructs = {
+    27:['conversion'], 36:['if'], 37:['if'], 38:['for'], 39:['for','if'],
+    40:['list'], 41:['list'], 42:['list','length'], 43:['dictionary'],
+    44:['save'], 45:['load'], 47:['if','save']
+  };
   const modes = ['copy', 'change', 'fromScratch', 'debug'];
   specs.forEach((spec, offset) => {
     const [title, topic, syntax, mission, description, code, challenge, broken] = spec;
@@ -59,13 +75,21 @@
     const mode = broken ? 'debug' : modes[offset % modes.length];
     const initialCode = broken || starters[floor] || `# ${mission}`;
     course.curriculum.push({ floor, language:'python', world:3, chapter, stage, title, topic, syntax, minutes:10 });
+    const capabilitySet = new Set(['move','action','variables']);
+    if (/\bprint\(/.test(code)) capabilitySet.add('print');
+    if (/^\s*if\b/m.test(code)) capabilitySet.add('if');
+    if (/^\s*for\b/m.test(code)) capabilitySet.add('for');
+    if (/\b(?:save|load)\(/.test(code)) capabilitySet.add('storage');
     course.levels[floor] = {
-      prerequisite:floor - 1, capabilities:['move','action','print','variables','if','for','storage'],
+      prerequisite:floor - 1, capabilities:[...capabilitySet],
+      requiredConstructs:requiredConstructs[floor] || [],
+      concepts:(requiredConstructs[floor] || []).filter(name => name === 'conversion'),
       title, mission,
       description:`${description} 課題の結果を${challenge.kind === 'storage' ? 'save()で保存' : 'print()で出力'}し、2歩先の階段でaction()を実行するとクリア。`,
       start:{x:3,y:7,direction:2}, exit:{x:3,y:5}, maxSteps:24,
       obstacles:wallsExcept(['3,7','3,6','3,5']), starter:initialCode,
-      goal:`${mission}。その後、2歩進んで階段でaction()を実行する`, challenge,
+      goal:`${mission}。その後、2歩進んで階段でaction()を実行する`,
+      challenge:{...challenge, variables:challengeVariables[floor]},
       support:{
         mode,
         instruction:mode === 'copy' ? 'お手本を入力し、値が作られる順番を確認しよう。'

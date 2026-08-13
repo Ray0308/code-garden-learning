@@ -207,7 +207,16 @@ for (const floor of Object.keys(levels).map(Number).filter(value => value >= 24)
   const actual = level.challenge.kind === 'storage' ? storage[level.challenge.key]
     : level.challenge.kind === 'variable' ? variables[level.challenge.name] : outputs.at(-1);
   assert.deepEqual(actual, level.challenge.expected, `${floor}階層の共通課題をクリアできます`);
+  for (const [name, expected] of Object.entries(level.challenge.variables || {})) {
+    assert.deepEqual(variables[name], expected, `${floor}階層は${name}を正しい途中値で保持します`);
+  }
 }
+assert.ok(Object.keys(levels).map(Number).filter(floor => floor >= 24)
+  .every(floor => Object.keys(levels[floor].challenge.variables || {}).length > 0),
+  '共通編は答えの直接出力だけでは通過できないよう途中変数を検証します');
+assert.ok(pythonEngine.compile('number = 12\nprint(number + 3)', {
+  capabilities:levels[27].capabilities, level:levels[27]
+}).errors.some(error => /int\(\)/.test(error.text)), '型変換課題は直接数値を代入して回避できません');
 assert.deepEqual([...new Set(curriculum.filter(item => item.world === 3).map(item => item.topic))].length >= 20, true, '共通編は十分な学習項目を含みます');
 assert.ok(curriculum.some(item => item.topic === '仮想保存') && curriculum.some(item => item.topic === '仮想読込'), '保存と読込を共通編に含みます');
 for (const floor of Object.keys(levels).map(Number).filter(value => value >= 24)) {

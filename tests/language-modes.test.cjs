@@ -63,6 +63,15 @@ assert.match(phpCourse.levels[36].solution, /if \(\$score >= 60\) \{/, 'PHPの�
 assert.match(javascriptCourse.levels[24].solution, /let score = 10;/, 'JavaScriptでlet変数を使えます');
 assert.match(javascriptCourse.levels[24].solution, /console\.log\(score\);/, 'JavaScriptでconsole.logを使えます');
 assert.match(javascriptCourse.levels[40].solution, /let items = \[2, 4, 6\];/, 'JavaScriptで配列を作れます');
+assert.match(javaCourse.levels[27].description, /Integer\.parseInt\(\)/, 'Javaの説明にはJavaの型変換を表示します');
+const displayText = course => [
+  ...course.curriculum.flatMap(item => [item.topic, item.syntax]),
+  ...Object.values(course.levels).flatMap(level => [level.mission, level.description, level.goal, ...(level.support?.hints || [])])
+].join('\n');
+assert.doesNotMatch(displayText(javaCourse), /\bTrue\b|\bint\(\)|\blen\(\)/, 'Java教材にPython固有表記を残しません');
+assert.doesNotMatch(displayText(javascriptCourse), /\bTrue\b|\bint\(\)|\blen\(\)/, 'JavaScript教材にPython固有表記を残しません');
+assert.doesNotMatch(displayText(phpCourse), /\bTrue\b|\bint\(\)|\blen\(\)|\band\b|\bor\b/, 'PHP教材にPython固有表記を残しません');
+assert.match(phpCourse.levels[16].description, /\$mob/, 'PHPの説明でも変数mobに$を付けます');
 assert.ok(java.compile('move()', { capabilities: ['move'] }).errors.length > 0, 'Javaはセミコロン忘れをエラーにします');
 assert.ok(php.compile('$score = 10', { capabilities: ['variables'] }).errors.length > 0, 'PHPはセミコロン忘れをエラーにします');
 assert.ok(javascript.compile('let score = 10', { capabilities: ['variables'] }).errors.length > 0, 'JavaScriptはセミコロン忘れをエラーにします');
