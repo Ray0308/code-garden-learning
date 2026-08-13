@@ -17,6 +17,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 const appSource = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
 const htmlSource = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+assert.match(htmlSource, /モフリスのコードガーデン/, 'ゲームタイトルをキャラクター名とリポジトリ名に統一します');
+assert.doesNotMatch(htmlSource, /Code Dungeon|CODE DUNGEON|迷宮写経|フォっくん/, '旧ブランド名をタイトル画面に残しません');
+assert.match(appSource, /birdName: 'モフリス'/, 'キャラクター名をモフリスへ統一します');
 
 assert.deepEqual(registry.listModes().map(mode => mode.id), ['python', 'java', 'php', 'javascript']);
 for (const course of [javaCourse, phpCourse, javascriptCourse]) {

@@ -6,7 +6,7 @@ const clearCard = document.querySelector('#clearCard');
 const failCard = document.querySelector('#failCard');
 const titleScreen = document.querySelector('#titleScreen');
 const titleContent = titleScreen.querySelector('.title-content');
-const GAME = { birdName: 'フォっくん', storageKey: 'code-dungeon-progress-v3', modeStorageKey: 'code-dungeon-language-mode' };
+const GAME = { birdName: 'モフリス', storageKey: 'code-dungeon-progress-v3', modeStorageKey: 'code-dungeon-language-mode' };
 const content = window.CODE_GARDEN_CONTENT;
 const languageRegistry = window.CODE_GARDEN_LANGUAGE_REGISTRY;
 if (!languageRegistry) throw new Error('Language registry is not loaded');
@@ -316,7 +316,7 @@ function renderDungeon() {
     npc.style.setProperty('--x', level().npc.x);
     npc.style.setProperty('--y', level().npc.y);
     npc.src = 'assets/mob/ally/down.png';
-    npc.alt = '門番のフクロウ';
+    npc.alt = '門番のモフリス';
     dungeon.append(npc);
   }
 
@@ -328,7 +328,7 @@ function renderDungeon() {
     image.style.setProperty('--x', mob.x);
     image.style.setProperty('--y', mob.y);
     image.src = revealed ? (mob.type === 'ally' ? 'assets/mob/ally/down.png' : (enemySprites.down || 'assets/mob/enemy/sheet-chroma.png')) : 'assets/mob/ally/down.png';
-    image.alt = revealed ? (mob.type === 'ally' ? '同族のフクロウ' : '敵のフクロウ') : '正体不明の影';
+    image.alt = revealed ? (mob.type === 'ally' ? 'モフリスの仲間' : 'モフリスの敵') : '正体不明の影';
     dungeon.append(image);
     if (!revealed) {
       const marker = document.createElement('span');
@@ -346,7 +346,7 @@ function renderDungeon() {
   hero.style.setProperty('--x', state.x);
   hero.style.setProperty('--y', state.y);
   hero.src = directions[state.direction].sprite;
-  hero.alt = `${directions[state.direction].label}を向くフクロウ`;
+  hero.alt = `${directions[state.direction].label}を向くモフリス`;
   dungeon.append(hero);
 
   document.querySelector('#directionLabel').textContent = directions[state.direction].label;
