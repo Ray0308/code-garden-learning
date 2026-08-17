@@ -103,6 +103,16 @@
     23:{mode:'fromScratch',instruction:'判断・3歩・右折をforの中へまとめよう。',initialCode:'# U字回廊の反復を短いコードにしよう',hints:['for _ in range(3):から始めます。','input()とif/elseもforの内側へインデントします。','各対応後にmove()を3回とturnRight()を実行し、最後にaction()します。']}
   };
   Object.entries(levels).forEach(([floor, stage]) => { stage.support = supportByFloor[floor]; });
+  [8, 9, 10, 11].forEach(floor => { levels[floor].requiredConstructs = ['for']; });
+  levels[17].requiredConstructs = ['print'];
+  levels[8].description = 'forの次の行を半角スペース4つ分だけ字下げすると、その行が繰り返しの中身になる。Pythonはこの字下げ（インデント）で処理のまとまりを判断する。';
+  levels[8].support.instruction = 'お手本を手入力し、forの内側を示す半角スペース4つの役割を確かめよう。';
+  levels[8].support.hints = ['forの行末にはコロン「:」が必要です。', '繰り返すmove()の前には半角スペースを4つ入れます。字下げされた行だけがforの中身です。'];
+  levels[21].support.initialCode = '# 最初の判断だけ処理が逆\nmob = input()\nif mob == "enemy":\n    sayHello()\nelse:\n    attack()\nmove()\nmove()\nmove()\nturnRight()\nmob = input()\nif mob == "enemy":\n    attack()\nelse:\n    sayHello()\nmove()\nmove()\nmove()\nturnRight()\nmob = input()\nif mob == "enemy":\n    attack()\nelse:\n    sayHello()\nmove()\nmove()\nmove()\nturnRight()\naction()';
+  levels[21].support.hints = ['3つの判断を見比べ、処理が違う1か所を探そう。', '最初の判断だけ、if側とelse側の処理を入れ替えます。'];
+  [0, 6, 8].forEach(floor => {
+    levels[floor].referenceCapabilities = levels[floor].capabilities.filter(name => name !== 'turn');
+  });
   [18, 19, 20, 21, 22, 23].forEach(floor => {
     if (!levels[floor].capabilities.includes('turn')) levels[floor].capabilities.push('turn');
   });

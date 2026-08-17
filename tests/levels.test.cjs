@@ -226,6 +226,15 @@ for (const floor of Object.keys(levels).map(Number).filter(value => value >= 24)
 assert.match(pythonEngine.formatError({ line: 2, text: '???' }), /^2行目:/, '言語エンジンが初心者向けエラーを整形します');
 assert.ok(pythonEngine.compile('for _ in range(2):\n    move()', { capabilities: ['move'] }).errors.length > 0, '未習得の構文は教材データに従って拒否します');
 assert.ok(pythonEngine.compile('move()\nmove()\naction()', { capabilities: levels[23].capabilities, level: levels[23] }).errors.some(error => /for を使って/.test(error.text)), '三影の門は命令の羅列だけではクリアできません');
+assert.ok(pythonEngine.compile('move()\nmove()\nmove()\naction()\nmove()\naction()', { capabilities: levels[10].capabilities, level: levels[10] }).errors.some(error => /for を使って/.test(error.text)), '三歩の足跡はforを使わない迂回解答を拒否します');
+assert.ok(pythonEngine.compile('mob = input()\nsayHello()\nmove()\nmove()\naction()', { capabilities: levels[17].capabilities, level: levels[17] }).errors.some(error => /print\(\) を使って/.test(error.text)), '受け取った言葉はprint(mob)を省略できません');
+assert.deepEqual(levels[0].referenceCapabilities, ['move', 'action'], 'チュートリアルの関数一覧に未使用の方向転換を表示しません');
+assert.ok([6, 8].every(floor => !levels[floor].referenceCapabilities.includes('turn')), '直進課題の関数一覧に未使用の方向転換を表示しません');
+assert.match(levels[8].description, /半角スペース4つ[\s\S]*Python[\s\S]*処理のまとまり/, 'Pythonのインデントが必要な理由を説明します');
+assert.equal((levels[21].support.initialCode.match(/sayHello\(\)\nelse:\n    attack\(\)/g) || []).length, 1, '壊れた分かれ道は修正箇所を1つだけにします');
+assert.equal(levels[30].support.mode, 'copy', '初めての剰余演算はお手本から学べるようにします');
+assert.equal(levels[30].support.example, levels[30].solution, 'フロア30にクリア可能な完全なお手本を表示します');
+assert.match(stylesSource, /\.function-row \.furigana-code rt\{display:ruby-text\}/, '関数一覧でもふりがなを非表示にしません');
 assert.ok(pythonEngine.compile('print("閉じ忘れ)', { capabilities: ['print'] }).errors.length > 0, '引用符の閉じ忘れを構文エラーにします');
 assert.deepEqual(pythonEngine.compile('attack()', { capabilities: ['attack'] }).commands.map(item => item.command), ['attack()'], 'attack()を実行キューへ追加します');
 assert.deepEqual(pythonEngine.compile('sayHello()', { capabilities: ['sayHello'] }).commands.map(item => item.command), ['sayHello()'], 'sayHello()を実行キューへ追加します');

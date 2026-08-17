@@ -148,3 +148,6 @@ html,body{background:#dcebdd;color:var(--ink)}
 .clear-card,.fail-card{max-width:calc(100% - 24px);max-height:calc(100% - 24px);overflow:hidden}
 .fail-card p{max-height:min(32dvh,190px);overflow:auto;overflow-wrap:anywhere;white-space:pre-wrap}
 button:disabled{cursor:not-allowed;opacity:.55}
+.function-row .furigana-code rt{display:ruby-text}
+.function-row .furigana-code{min-height:38px;padding-top:10px;overflow-y:visible}
+.function-detail-code code{white-space:pre-wrap}

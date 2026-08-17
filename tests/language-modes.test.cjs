@@ -75,6 +75,16 @@ assert.doesNotMatch(displayText(javaCourse), /\bTrue\b|\bint\(\)|\blen\(\)/, 'Ja
 assert.doesNotMatch(displayText(javascriptCourse), /\bTrue\b|\bint\(\)|\blen\(\)/, 'JavaScript教材にPython固有表記を残しません');
 assert.doesNotMatch(displayText(phpCourse), /\bTrue\b|\bint\(\)|\blen\(\)|\band\b|\bor\b/, 'PHP教材にPython固有表記を残しません');
 assert.match(phpCourse.levels[16].description, /\$mob/, 'PHPの説明でも変数mobに$を付けます');
+assert.doesNotMatch(javascriptCourse.levels[7].starter.split('\n')[0], /print\(\)/, 'JavaScriptの修正課題コメントにPythonのprint()を残しません');
+for (const course of [javaCourse, phpCourse, javascriptCourse]) {
+  assert.doesNotMatch(course.levels[11].support.instruction, /インデント/, `${course.id}の波かっこ課題をインデント課題と誤案内しません`);
+  assert.match(course.levels[11].support.initialCode, /最初のforの波かっこの中が空/, `${course.id}の修正対象を正確に案内します`);
+  assert.equal(course.levels[30].support.mode, 'copy', `${course.id}の剰余演算はお手本から開始します`);
+  assert.ok(course.levels[30].support.example, `${course.id}のフロア30に完全なお手本があります`);
+}
+assert.match(appSource, /function referenceVariable[\s\S]*challenge\?\.variables/, '関数一覧の変数名を階層データから生成します');
+assert.match(appSource, /function renderFurigana[\s\S]*createElement\('ruby'\)[\s\S]*createElement\('rt'\)/, '関数一覧へ実際のふりがな要素を生成します');
+assert.match(appSource, /referenceCapabilities = selectedLevel\.referenceCapabilities \|\| selectedLevel\.capabilities/, '階層ごとの関数表示範囲を反映します');
 assert.ok(java.compile('move()', { capabilities: ['move'] }).errors.length > 0, 'Javaはセミコロン忘れをエラーにします');
 assert.ok(php.compile('$score = 10', { capabilities: ['variables'] }).errors.length > 0, 'PHPはセミコロン忘れをエラーにします');
 assert.ok(javascript.compile('let score = 10', { capabilities: ['variables'] }).errors.length > 0, 'JavaScriptはセミコロン忘れをエラーにします');

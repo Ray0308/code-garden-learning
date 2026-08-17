@@ -27,6 +27,59 @@ const referenceSamples = {
   php:{move:'move();',turnLeft:'turnLeft();',turnRight:'turnRight();',action:'action();',for:'for ($i = 0; $i < 3; $i++) {\n    move();\n}',print:'echo "文字列";',input:'$value = input();',attack:'attack();',sayHello:'sayHello();',if:'if ($mob == "enemy") {\n    attack();\n} else {\n    sayHello();\n}',variables:'$value = 10;',conversion:'$value = (int) "12";',storage:'save("key", $value);\n$value = load("key");'},
   javascript:{move:'move();',turnLeft:'turnLeft();',turnRight:'turnRight();',action:'action();',for:'for (let i = 0; i < 3; i++) {\n    move();\n}',print:'console.log("文字列");',input:'let value = input();',attack:'attack();',sayHello:'sayHello();',if:'if (mob == "enemy") {\n    attack();\n} else {\n    sayHello();\n}',variables:'let value = 10;',conversion:'let value = parseInt("12");',storage:'save("key", value);\nlet value = load("key");'}
 };
+const furiganaAnnotations = {
+  move:'進む', turnLeft:'左を向く', turnRight:'右を向く', action:'調べる',
+  attack:'攻撃', sayHello:'あいさつ', input:'入力', print:'出力', echo:'出力',
+  'System.out.println':'出力', 'console.log':'出力', for:'繰り返す', if:'もし',
+  else:'それ以外', save:'保存', load:'読込', int:'整数化',
+  'Integer.parseInt':'整数化', parseInt:'整数化'
+};
+
+function referenceVariable(selectedLevel, reference) {
+  if (reference === 'input' || selectedLevel.capabilities.includes('input')) return 'mob';
+  return Object.keys(selectedLevel.challenge?.variables || {})[0] || 'value';
+}
+
+function referenceSample(selectedLevel, reference) {
+  const variable = referenceVariable(selectedLevel, reference);
+  let sample = referenceSamples[activeLanguage][reference];
+  sample = sample.replace(/\bvalue\b/g, variable);
+  if (reference === 'print' && selectedLevel.capabilities.includes('input')) {
+    if (activeLanguage === 'java') sample = `System.out.println(${variable});`;
+    else if (activeLanguage === 'javascript') sample = `console.log(${variable});`;
+    else if (activeLanguage === 'php') sample = `echo $${variable};`;
+    else sample = `print(${variable})`;
+  }
+  return sample;
+}
+
+function renderFurigana(container, sample, compact = false) {
+  const shown = compact ? sample.replace(/\s+/g, ' ').trim() : sample;
+  const code = document.createElement('code');
+  const tokens = Object.keys(furiganaAnnotations).sort((a, b) => b.length - a.length);
+  const pattern = new RegExp(`(${tokens.map(token => token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'g');
+  let cursor = 0;
+  for (const match of shown.matchAll(pattern)) {
+    code.append(document.createTextNode(shown.slice(cursor, match.index)));
+    const ruby = document.createElement('ruby');
+    ruby.append(document.createTextNode(match[0]));
+    const reading = document.createElement('rt');
+    reading.textContent = furiganaAnnotations[match[0]];
+    ruby.append(reading);
+    code.append(ruby);
+    cursor = match.index + match[0].length;
+  }
+  code.append(document.createTextNode(shown.slice(cursor)));
+  container.replaceChildren(code);
+}
+
+function updateReferenceSamples(selectedLevel) {
+  document.querySelectorAll('[data-reference]').forEach(button => {
+    const sample = referenceSample(selectedLevel, button.dataset.reference);
+    button.dataset.insert = sample;
+    renderFurigana(button.querySelector('.furigana-code'), sample, true);
+  });
+}
 const directions = [
   { dx: 0, dy: 1, label: '下', sprite: 'assets/character/main-down.png' },
   { dx: 1, dy: 0, label: '右', sprite: 'assets/character/main-right.png' },
@@ -51,11 +104,7 @@ function setupLanguageMode() {
   document.querySelector('#editorFileName').textContent = meta.fileName;
   document.querySelector('#gameFunctionNote').textContent = meta.functionNote;
   editor.setAttribute('aria-label', meta.editorLabel);
-  document.querySelectorAll('[data-reference]').forEach(button => {
-    const sample = referenceSamples[activeLanguage][button.dataset.reference];
-    button.dataset.insert = sample;
-    button.querySelector('.furigana-code').textContent = sample;
-  });
+  updateReferenceSamples(levels[currentFloor]);
   if (activeLanguage !== 'python') {
     const keys = activeLanguage === 'java' || activeLanguage === 'javascript'
       ? [['    ', 'Tab'], ['()', '( )'], [';', ';'], ['{', '{'], ['}', '}'], ['\n', '↵']]
@@ -164,8 +213,10 @@ function selectFloor(floor, bypassUnlock = false) {
   const stageLabel = lesson?.stage ? `${lesson.chapter}-${lesson.stage}` : String(floor).padStart(2, '0');
   document.querySelector('.chapter small').textContent = `${floor === 0 ? 'TUTORIAL' : `FLOOR ${floor}`} / WORLD ${lesson?.world || 1} STAGE ${stageLabel}`;
   document.querySelector('.chapter strong').textContent = level().title;
-  document.querySelectorAll('[data-capability]').forEach(button => { button.hidden = !selectedLevel.capabilities.includes(button.dataset.capability); });
+  const referenceCapabilities = selectedLevel.referenceCapabilities || selectedLevel.capabilities;
+  document.querySelectorAll('[data-capability]').forEach(button => { button.hidden = !referenceCapabilities.includes(button.dataset.capability); });
   document.querySelectorAll('[data-concept]').forEach(button => { button.hidden = !(selectedLevel.concepts || []).includes(button.dataset.concept); });
+  updateReferenceSamples(selectedLevel);
   document.querySelector('#learningSupport').dataset.mode = selectedLevel.support.mode;
   document.querySelector('#supportModeLabel').textContent = supportLabels[selectedLevel.support.mode];
   document.querySelector('#supportInstruction').textContent = selectedLevel.support.instruction;
@@ -679,9 +730,8 @@ function insertCode(command) {
 document.querySelectorAll('[data-reference]').forEach(button => button.addEventListener('click', () => {
   pendingInsert = button.dataset.insert;
   const modal = document.querySelector('#functionModal');
-  const annotatedCode = button.querySelector('.furigana-code');
   document.querySelector('#functionDetailTitle').textContent = pendingInsert.split('\n')[0];
-  document.querySelector('#functionDetailCode').innerHTML = annotatedCode ? annotatedCode.innerHTML : '';
+  renderFurigana(document.querySelector('#functionDetailCode'), pendingInsert);
   document.querySelector('#functionDetailHint').textContent = button.querySelector(':scope > span:last-child')?.textContent || '';
   modal.classList.add('show');
   modal.setAttribute('aria-hidden', 'false');

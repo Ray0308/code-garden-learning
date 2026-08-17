@@ -62,7 +62,7 @@
     47:{price:350,count:4,total:1400,result:'success'}
   };
   const requiredConstructs = {
-    27:['conversion'], 36:['if'], 37:['if'], 38:['for'], 39:['for','if'],
+    27:['conversion'], 30:['modulo'], 36:['if'], 37:['if'], 38:['for'], 39:['for','if'],
     40:['list'], 41:['list'], 42:['list','length'], 43:['dictionary'],
     44:['save'], 45:['load'], 47:['if','save']
   };
@@ -103,6 +103,12 @@
       solution:`${code}\nmove()\nmove()\naction()`
     };
   });
+  course.levels[30].support.mode = 'copy';
+  course.levels[30].support.instruction = 'お手本を入力し、%が割り算の余りを求める演算子であることを実行結果で確かめよう。';
+  course.levels[30].support.initialCode = '# お手本をこの下へ手入力しよう';
+  course.levels[30].support.example = course.levels[30].solution;
+  course.levels[30].support.hints = ['17 % 5 の結果は2です。', '計算結果をremainderへ保存して出力し、2歩進んでaction()します。'];
+  course.levels[30].challenge.hint = 'remainder = 17 % 5で余りを保存し、print(remainder)で出力してから階段へ進もう。';
   content.version = 3;
   if (typeof module !== 'undefined' && module.exports) module.exports = content;
 })(typeof globalThis !== 'undefined' ? globalThis : window);

@@ -95,7 +95,7 @@
       }
       const prefix = ' '.repeat(stack.length * 4);
       if (trimmed.startsWith('#')) {
-        output.push(`${prefix}//${trimmed.slice(1).replace(/range\(\)/g, 'for文')}`);
+        output.push(`${prefix}//${translatedSyntax(trimmed.slice(1), language)}`);
         continue;
       }
       const loop = trimmed.match(/^for\s+_\s+in\s+range\((\d+)\):$/);
@@ -193,6 +193,17 @@
       item.topic = translatedSyntax(item.topic, options.id);
       item.syntax = translatedSyntax(item.syntax, options.id);
     });
+    const loopWord = options.id === 'java' ? 'for (int i = 0; i < 3; i++)'
+      : options.id === 'javascript' ? 'for (let i = 0; i < 3; i++)'
+        : 'for ($i = 0; $i < 3; $i++)';
+    course.levels[8].description = `${loopWord} の波かっこ { } の内側が繰り返す処理です。読みやすくするため内側を字下げしますが、処理範囲は波かっこで決まります。`;
+    course.levels[8].support.instruction = 'お手本を入力し、波かっこの内側に書いたmove()が3回実行されることを確かめよう。';
+    course.levels[8].support.hints = ['for文の末尾に開始の波かっこ { が必要です。', '繰り返すmove()は { と } の間へ書きます。'];
+    course.levels[11].starter = course.levels[11].starter.replace(/^\/\/.*$/m, '// 最初のforの波かっこの中が空です');
+    course.levels[11].support.initialCode = (course.levels[11].support.initialCode || course.levels[11].starter)
+      .replace(/^\/\/.*$/m, '// 最初のforの波かっこの中が空です');
+    course.levels[11].support.instruction = '空になっている最初のforへ、外に出ているmove()を移動しよう。';
+    course.levels[11].support.hints = ['最初の { と } の間に命令がありません。', '直後のmove()を最初の波かっこの内側へ移動します。'];
     return course;
   }
 

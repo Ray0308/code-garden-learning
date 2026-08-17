@@ -145,12 +145,14 @@
         list: /=\s*\[/,
         dictionary: /=\s*\{/,
         length: /\blen\s*\(/,
+        print: /\bprint\s*\(/,
+        modulo: /%/,
         save: /\bsave\s*\(/,
         load: /\bload\s*\(/
       };
       const constructLabels = {
         for:'for', if:'if', conversion:'int()', list:'リスト', dictionary:'辞書',
-        length:'len()', save:'save()', load:'load()'
+        length:'len()', print:'print()', modulo:'%', save:'save()', load:'load()'
       };
       for (const name of context.level?.requiredConstructs || []) {
         if (constructMatchers[name] && !constructMatchers[name].test(source)) {
