@@ -227,7 +227,8 @@ assert.match(pythonEngine.formatError({ line: 2, text: '???' }), /^2行目:/, '�
 assert.ok(pythonEngine.compile('for _ in range(2):\n    move()', { capabilities: ['move'] }).errors.length > 0, '未習得の構文は教材データに従って拒否します');
 assert.ok(pythonEngine.compile('move()\nmove()\naction()', { capabilities: levels[23].capabilities, level: levels[23] }).errors.some(error => /for を使って/.test(error.text)), '三影の門は命令の羅列だけではクリアできません');
 assert.ok(pythonEngine.compile('move()\nmove()\nmove()\naction()\nmove()\naction()', { capabilities: levels[10].capabilities, level: levels[10] }).errors.some(error => /for を使って/.test(error.text)), '三歩の足跡はforを使わない迂回解答を拒否します');
-assert.ok(pythonEngine.compile('mob = input()\nsayHello()\nmove()\nmove()\naction()', { capabilities: levels[17].capabilities, level: levels[17] }).errors.some(error => /print\(\) を使って/.test(error.text)), '受け取った言葉はprint(mob)を省略できません');
+assert.ok(pythonEngine.compile('mob = input()\nsayHello()\nmove()\nmove()\naction()', { capabilities: levels[17].capabilities, level: levels[17] }).errors.some(error => /mobの出力/.test(error.text)), '受け取った言葉はprint(mob)を省略できません');
+assert.ok(pythonEngine.compile('mob = input()\nprint("dummy")\nsayHello()\nmove()\nmove()\naction()', { capabilities: levels[17].capabilities, level: levels[17] }).errors.some(error => /mobの出力/.test(error.text)), '無関係な文字列の出力でprint(mob)の条件を迂回できません');
 assert.deepEqual(levels[0].referenceCapabilities, ['move', 'action'], 'チュートリアルの関数一覧に未使用の方向転換を表示しません');
 assert.ok([6, 8].every(floor => !levels[floor].referenceCapabilities.includes('turn')), '直進課題の関数一覧に未使用の方向転換を表示しません');
 assert.match(levels[8].description, /半角スペース4つ[\s\S]*Python[\s\S]*処理のまとまり/, 'Pythonのインデントが必要な理由を説明します');

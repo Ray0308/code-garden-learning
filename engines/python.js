@@ -146,13 +146,14 @@
         dictionary: /=\s*\{/,
         length: /\blen\s*\(/,
         print: /\bprint\s*\(/,
+        printMob: /\bprint\s*\(\s*mob\s*\)/,
         modulo: /%/,
         save: /\bsave\s*\(/,
         load: /\bload\s*\(/
       };
       const constructLabels = {
         for:'for', if:'if', conversion:'int()', list:'リスト', dictionary:'辞書',
-        length:'len()', print:'print()', modulo:'%', save:'save()', load:'load()'
+        length:'len()', print:'print()', printMob:'受け取ったmobの出力', modulo:'%', save:'save()', load:'load()'
       };
       for (const name of context.level?.requiredConstructs || []) {
         if (constructMatchers[name] && !constructMatchers[name].test(source)) {

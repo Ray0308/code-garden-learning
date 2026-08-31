@@ -104,7 +104,7 @@
   };
   Object.entries(levels).forEach(([floor, stage]) => { stage.support = supportByFloor[floor]; });
   [8, 9, 10, 11].forEach(floor => { levels[floor].requiredConstructs = ['for']; });
-  levels[17].requiredConstructs = ['print'];
+  levels[17].requiredConstructs = ['printMob'];
   levels[8].description = 'forの次の行を半角スペース4つ分だけ字下げすると、その行が繰り返しの中身になる。Pythonはこの字下げ（インデント）で処理のまとまりを判断する。';
   levels[8].support.instruction = 'お手本を手入力し、forの内側を示す半角スペース4つの役割を確かめよう。';
   levels[8].support.hints = ['forの行末にはコロン「:」が必要です。', '繰り返すmove()の前には半角スペースを4つ入れます。字下げされた行だけがforの中身です。'];

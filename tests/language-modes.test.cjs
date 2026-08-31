@@ -78,6 +78,15 @@ assert.match(phpCourse.levels[16].description, /\$mob/, 'PHPの説明でも変�
 assert.equal(phpCourse.curriculum.find(item => item.floor === 46).syntax, '$total = $price * $count;', 'PHP 46階層の教材例は変数記号とセミコロンを省略しません');
 assert.equal(javaCourse.curriculum.find(item => item.floor === 46).syntax, 'var total = price * count;', 'Java 46階層の教材例を実行可能な文として表示します');
 assert.equal(javascriptCourse.curriculum.find(item => item.floor === 46).syntax, 'let total = price * count;', 'JavaScript 46階層の教材例を実行可能な文として表示します');
+for (const [engine, course, wrongOutput] of [
+  [java, javaCourse, 'System.out.println("dummy");'],
+  [php, phpCourse, 'echo "dummy";'],
+  [javascript, javascriptCourse, 'console.log("dummy");']
+]) {
+  const floor17 = course.levels[17];
+  const source = `${wrongOutput}\nmove();\nmove();\naction();`;
+  assert.ok(engine.compile(source, { capabilities: floor17.capabilities, level: floor17 }).errors.some(error => /mobの出力/.test(error.text)), `${course.id}でもmob以外の出力で17階層を迂回できません`);
+}
 assert.doesNotMatch(javascriptCourse.levels[7].starter.split('\n')[0], /print\(\)/, 'JavaScriptの修正課題コメントにPythonのprint()を残しません');
 for (const course of [javaCourse, phpCourse, javascriptCourse]) {
   assert.doesNotMatch(course.levels[11].support.instruction, /インデント/, `${course.id}の波かっこ課題をインデント課題と誤案内しません`);
