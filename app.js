@@ -815,10 +815,6 @@ document.querySelector('#continueAdventure').hidden = loadProgress().cleared.len
 document.querySelector('#startTutorial').addEventListener('click', () => startAdventure(0));
 document.querySelector('#continueAdventure').addEventListener('click', continueAdventure);
 document.querySelector('#skipTutorial').addEventListener('click', () => startAdventure(1, true));
-const testFloorPicker = document.querySelector('.test-floor-picker');
-const enableTestPicker = new URLSearchParams(location.search).has('test')
-  || ['localhost', '127.0.0.1'].includes(location.hostname);
-if (!enableTestPicker) testFloorPicker.hidden = true;
 const testFloorButtons = document.querySelector('#testFloorButtons');
 stageOrder.forEach((floor, index) => {
   const button = document.createElement('button');
@@ -829,7 +825,7 @@ stageOrder.forEach((floor, index) => {
   button.title = floor === 0 ? `Tutorial. ${levels[floor].title}` : `FLOOR ${floor}. ${levels[floor].title}`;
   button.setAttribute('aria-label', floor === 0 ? `Tutorial：${levels[floor].title}` : `FLOOR ${floor}：${levels[floor].title}`);
   button.addEventListener('click', () => startAdventure(floor, true));
-  if (enableTestPicker) testFloorButtons.appendChild(button);
+  testFloorButtons.appendChild(button);
 });
 document.querySelector('#lessonStart').addEventListener('click', () => { document.querySelector('#lessonModal').classList.remove('show'); document.querySelector('#lessonModal').setAttribute('aria-hidden', 'true'); });
 editor.addEventListener('input', updateLineNumbers);
