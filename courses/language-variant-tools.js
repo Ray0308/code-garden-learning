@@ -191,7 +191,9 @@
     }
     course.curriculum.forEach(item => {
       item.topic = translatedSyntax(item.topic, options.id);
-      item.syntax = translatedSyntax(item.syntax, options.id);
+      item.syntax = /^[A-Za-z_]\w*\s*=(?!=)/.test(item.syntax.trim())
+        ? translatedSyntax(fromPython(item.syntax, options.id), options.id)
+        : translatedSyntax(item.syntax, options.id);
     });
     const loopWord = options.id === 'java' ? 'for (int i = 0; i < 3; i++)'
       : options.id === 'javascript' ? 'for (let i = 0; i < 3; i++)'

@@ -75,6 +75,9 @@ assert.doesNotMatch(displayText(javaCourse), /\bTrue\b|\bint\(\)|\blen\(\)/, 'Ja
 assert.doesNotMatch(displayText(javascriptCourse), /\bTrue\b|\bint\(\)|\blen\(\)/, 'JavaScript教材にPython固有表記を残しません');
 assert.doesNotMatch(displayText(phpCourse), /\bTrue\b|\bint\(\)|\blen\(\)|\band\b|\bor\b/, 'PHP教材にPython固有表記を残しません');
 assert.match(phpCourse.levels[16].description, /\$mob/, 'PHPの説明でも変数mobに$を付けます');
+assert.equal(phpCourse.curriculum.find(item => item.floor === 46).syntax, '$total = $price * $count;', 'PHP 46階層の教材例は変数記号とセミコロンを省略しません');
+assert.equal(javaCourse.curriculum.find(item => item.floor === 46).syntax, 'var total = price * count;', 'Java 46階層の教材例を実行可能な文として表示します');
+assert.equal(javascriptCourse.curriculum.find(item => item.floor === 46).syntax, 'let total = price * count;', 'JavaScript 46階層の教材例を実行可能な文として表示します');
 assert.doesNotMatch(javascriptCourse.levels[7].starter.split('\n')[0], /print\(\)/, 'JavaScriptの修正課題コメントにPythonのprint()を残しません');
 for (const course of [javaCourse, phpCourse, javascriptCourse]) {
   assert.doesNotMatch(course.levels[11].support.instruction, /インデント/, `${course.id}の波かっこ課題をインデント課題と誤案内しません`);
