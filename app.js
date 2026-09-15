@@ -128,10 +128,13 @@ function setupLanguageMode() {
   }
 
   document.querySelectorAll('[data-language-mode-select]').forEach(selector => {
+    const showAudience = selector.id === 'titleLanguageModeSelect';
     languageRegistry.listModes().forEach(mode => {
       const option = document.createElement('option');
       option.value = mode.id;
-      option.textContent = mode.label;
+      option.textContent = showAudience && mode.audience
+        ? `${mode.label}：${mode.audience}`
+        : mode.label;
       option.selected = mode.id === activeLanguage;
       selector.append(option);
     });

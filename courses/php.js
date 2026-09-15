@@ -6,6 +6,7 @@
     id: 'php',
     meta: {
       label: 'PHP', fileName: 'main.php', editorLabel: 'PHPコードエディター',
+      audience: 'Web開発を学びたい方向け',
       intro: 'ゲームを動かしながら、PHPの$変数・文末記号・波かっこを身につけよう。',
       functionNote: 'move(); などは研修用ゲームが用意したPHP風の専用関数です。'
     }

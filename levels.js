@@ -123,6 +123,7 @@
       label: 'Python',
       fileName: 'main.py',
       editorLabel: 'Pythonコードエディター',
+      audience: '初めての方におすすめ',
       intro: '毎日ちょっとずつ、遊びながらPythonの基礎を身につけよう。',
       functionNote: 'move()などは、このゲーム専用に用意したPython関数です。'
     },

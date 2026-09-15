@@ -6,6 +6,7 @@
     id: 'javascript',
     meta: {
       label: 'JavaScript', fileName: 'main.js', editorLabel: 'JavaScriptコードエディター',
+      audience: 'Web画面の開発を学びたい方向け',
       intro: 'ゲームを動かしながら、JavaScriptのlet変数・波かっこ・配列を身につけよう。',
       functionNote: 'move(); などは研修用ゲームが用意したJavaScriptの専用関数です。'
     }

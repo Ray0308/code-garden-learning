@@ -24,6 +24,12 @@ assert.doesNotMatch(htmlSource, /Code Dungeon|CODE DUNGEON|迷宮写経|フォ�
 assert.match(appSource, /birdName: 'モフリス'/, 'キャラクター名をモフリスへ統一します');
 
 assert.deepEqual(registry.listModes().map(mode => mode.id), ['python', 'java', 'php', 'javascript']);
+assert.deepEqual(Object.fromEntries(registry.listModes().map(mode => [mode.id, mode.audience])), {
+  python: '初めての方におすすめ',
+  java: 'Java研修予定の方向け',
+  php: 'Web開発を学びたい方向け',
+  javascript: 'Web画面の開発を学びたい方向け'
+}, '未経験者が言語を選べる案内が必要です');
 for (const course of [javaCourse, phpCourse, javascriptCourse]) {
   assert.equal(course.curriculum.length, 48, `${course.id}は48ステージ必要です`);
   assert.equal(Object.keys(course.levels).length, 48, `${course.id}の階層データは48件必要です`);
@@ -106,8 +112,10 @@ assert.ok(java.compile('move()', { capabilities: ['move'] }).errors.length > 0, 
 assert.ok(php.compile('$score = 10', { capabilities: ['variables'] }).errors.length > 0, 'PHPはセミコロン忘れをエラーにします');
 assert.ok(javascript.compile('let score = 10', { capabilities: ['variables'] }).errors.length > 0, 'JavaScriptはセミコロン忘れをエラーにします');
 assert.match(htmlSource, /id="titleLanguageModeSelect"[^>]+data-language-mode-select/, 'タイトル画面に言語選択が必要です');
+assert.match(htmlSource, /迷った場合はPythonを選んでください。/, '迷ったときの既定言語を案内します');
 assert.equal((htmlSource.match(/data-language-mode-select/g) || []).length, 2, 'タイトルとゲーム画面の両方で言語を選べます');
 assert.match(appSource, /querySelectorAll\('\[data-language-mode-select\]'\)/, '2つの言語選択を同じ登録済みモードから生成します');
+assert.match(appSource, /titleLanguageModeSelect[\s\S]*mode\.audience/, 'タイトルの言語選択に対象者の案内を付けます');
 assert.match(appSource, /floor === 0 \? 'T' : String\(floor\)/, 'テスト用階層ボタンはTutorialをT、通常階層を実際のFLOOR番号で表示します');
 
 const userWrittenJavaScript = `let score = 75;

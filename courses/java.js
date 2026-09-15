@@ -6,6 +6,7 @@
     id: 'java',
     meta: {
       label: 'Java', fileName: 'Main.java', editorLabel: 'Javaコードエディター',
+      audience: 'Java研修予定の方向け',
       intro: 'ゲームを動かしながら、Javaの文末記号・型・波かっこを身につけよう。',
       functionNote: 'move(); などは研修用ゲームが用意したJava風の専用メソッドです。'
     }
