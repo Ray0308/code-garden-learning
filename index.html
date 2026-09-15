@@ -2,14 +2,14 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
   <meta name="robots" content="noindex, nofollow, noarchive">
   <title>モフリスのコードガーデン — プログラミング学習</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=M+PLUS+Rounded+1c:wght@500;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260915-4">
-  <link rel="stylesheet" href="title.css?v=20260915-2">
+  <link rel="stylesheet" href="styles.css?v=20260915-5">
+  <link rel="stylesheet" href="title.css?v=20260915-3">
   <link rel="stylesheet" href="answers.css?v=20260718-2">
   <link rel="stylesheet" href="bright-theme.css?v=20260915-2">
 </head>
@@ -32,12 +32,19 @@
       </label>
       <p id="titleIntro">毎日ちょっとずつ、遊びながらコードの基礎を身につけよう。</p>
       <button class="title-primary" id="startTutorial">チュートリアルから始める</button>
-      <button class="title-secondary continue-button" id="continueAdventure">続きから冒険する</button>
+      <button class="title-secondary continue-button" id="continueAdventure" hidden>続きから冒険する</button>
       <button class="title-secondary" id="skipTutorial">1階層から始める</button>
-      <details class="test-floor-picker" hidden>
+      <section class="stage-select" id="stageSelect" aria-label="冒険の記録">
+        <h2>冒険の記録</h2>
+        <p id="stageProgressSummary">まだクリアした階層はありません。</p>
+        <p id="reviewNotice" hidden></p>
+        <div class="skill-list" id="skillList"></div>
+        <div class="stage-list" id="stageList"></div>
+      </section>
+      <details class="test-floor-picker" id="testFloorPicker">
         <summary>デバッグ用：好きな階層から始める</summary>
         <div id="testFloorButtons"></div>
-        <small>開発確認用です。通常の冒険では階層を順番に攻略します。</small>
+        <small>開発確認用です。ここから始めると通常の進捗は変わりません。</small>
       </details>
       <small class="version">PROTOTYPE v0.2</small>
     </div>
@@ -62,7 +69,7 @@
         <span class="brand-rune">⌘</span>
         <span><b>CODE</b> GARDEN</span>
       </a>
-      <div class="chapter"><small>CHAPTER 00</small><strong>はじまりの間</strong></div>
+      <div class="chapter"><small>CHAPTER 00</small><strong>はじまりの間</strong><b id="debugBadge" hidden>DEBUG</b></div>
       <div class="top-actions">
         <span class="language duration-badge">1日 5〜15分</span>
         <label class="language language-picker"><span>言語</span><select id="languageModeSelect" data-language-mode-select aria-label="学習する言語"></select></label>
@@ -70,20 +77,20 @@
       </div>
     </header>
 
-    <nav class="mobile-view-tabs" aria-label="画面切り替え">
-      <button type="button" data-mobile-view="editor" class="active">コード</button>
-      <button type="button" data-mobile-view="dungeon">ダンジョン</button>
-      <button type="button" data-mobile-view="guide">ミッション</button>
+    <nav class="mobile-view-tabs" role="tablist" aria-label="画面切り替え">
+      <button type="button" role="tab" data-mobile-view="editor" aria-selected="true" class="active">コード</button>
+      <button type="button" role="tab" data-mobile-view="dungeon" aria-selected="false">ダンジョン</button>
+      <button type="button" role="tab" data-mobile-view="guide" aria-selected="false">ミッション</button>
     </nav>
     <main class="workspace" data-active-mobile-view="editor">
       <aside class="brief-panel ide-sidebar collapsed" id="ideSidebar" data-view-panel="guide">
         <nav class="activity-bar" aria-label="サイドバー">
-          <button class="activity-button" type="button" data-sidebar-pane="mission" aria-label="ミッション" title="ミッション">◆</button>
-          <button class="activity-button active" type="button" data-sidebar-pane="functions" aria-label="使える関数" title="使える関数">ƒ</button>
+          <button class="activity-button active" type="button" data-sidebar-pane="mission" aria-label="ミッション" title="ミッション">◆</button>
+          <button class="activity-button" type="button" data-sidebar-pane="functions" aria-label="使える関数" title="使える関数">ƒ</button>
           <button class="activity-button" type="button" data-sidebar-pane="help" aria-label="ヘルプ" title="ヘルプ">?</button>
         </nav>
-        <div class="side-panel" id="sidePanel" aria-hidden="true">
-          <section class="sidebar-pane" data-pane="mission" hidden>
+        <div class="side-panel" id="sidePanel" aria-hidden="false">
+          <section class="sidebar-pane active" data-pane="mission">
             <header class="sidebar-heading"><span>MISSION</span><button type="button" data-close-sidebar aria-label="閉じる">×</button></header>
             <div class="mission-review">
               <small id="missionReviewFloor">FLOOR 00</small>
@@ -94,7 +101,7 @@
               <p class="mission-review-note">まず実行して、起きたこととエラー表示を手がかりに直してみよう。</p>
             </div>
           </section>
-          <section class="sidebar-pane active" data-pane="functions">
+          <section class="sidebar-pane" data-pane="functions" hidden>
             <header class="sidebar-heading"><span>FUNCTIONS</span><button type="button" data-close-sidebar aria-label="閉じる">×</button></header>
         <section class="mission-card mission-card-hidden">
           <span class="section-label">MISSION</span>
@@ -136,7 +143,7 @@
       <section class="editor-panel" data-view-panel="editor">
         <div class="panel-bar">
           <div class="file-tab"><span>●</span> <b id="editorFileName">main</b></div>
-          <div class="editor-state"><i></i><span id="editorState">入力待ち</span></div>
+          <div class="editor-state"><i></i><span id="editorState" aria-live="polite">入力待ち</span></div>
         </div>
         <div class="learning-support" id="learningSupport" data-mode="copy">
           <strong id="supportModeLabel">写経</strong>
@@ -155,6 +162,11 @@ action()</textarea>
         <div class="code-keyboard" aria-label="コード入力補助">
           <button type="button" data-code-key="    ">Tab</button><button type="button" data-code-key="()">( )</button><button type="button" data-code-key=":" >:</button><button type="button" data-code-key="&quot;&quot;">&quot; &quot;</button><button type="button" data-code-key=" = ">=</button><button type="button" data-code-key="\n">↵</button>
         </div>
+        <div class="run-result" id="runResult" hidden>
+          <strong id="runResultTitle">実行結果</strong>
+          <p id="runResultMessage"></p>
+          <button type="button" id="runResultRetry">再挑戦</button>
+        </div>
         <div class="terminal">
           <div class="terminal-head"><span>OUTPUT</span><button id="clearOutput">CLEAR</button></div>
           <div id="output"><span class="prompt">›</span> コードを書いて実行してください</div>
@@ -171,21 +183,8 @@ action()</textarea>
           <span>CODE GARDEN LIVE</span>
           <div><i class="live-dot"></i> 実行画面</div>
         </div>
-        <div class="dungeon-viewport">
+          <div class="dungeon-viewport">
           <div class="dungeon" id="dungeon" aria-label="ダンジョン"></div>
-          <div class="clear-card" id="clearCard">
-            <span id="clearLabel">QUEST COMPLETE</span>
-            <strong id="clearTitle">階層を踏破した！</strong>
-            <p id="clearLesson"></p>
-            <code id="clearSyntax"></code>
-            <button id="againBtn">もう一度挑戦</button>
-          </div>
-          <div class="fail-card" id="failCard">
-            <span id="failLabel">QUEST FAILED</span>
-            <strong id="failTitle">実行に失敗しました</strong>
-            <p id="failReason">コードを確認して、もう一度挑戦しよう。</p>
-            <button id="retryBtn">再挑戦</button>
-          </div>
         </div>
         <div class="dungeon-footer">
           <div><small>現在の向き</small><b id="directionLabel">右</b></div>
@@ -195,19 +194,34 @@ action()</textarea>
       </section>
     </main>
   </div>
+  <div class="result-overlay" id="resultOverlay">
+    <div class="clear-card" id="clearCard">
+      <span id="clearLabel">QUEST COMPLETE</span>
+      <strong id="clearTitle">階層を踏破した！</strong>
+      <p id="clearLesson"></p>
+      <code id="clearSyntax"></code>
+      <button id="againBtn">次の階層へ</button>
+    </div>
+    <div class="fail-card" id="failCard" role="alertdialog" aria-modal="true" aria-labelledby="failTitle" aria-describedby="failReason">
+      <span id="failLabel">QUEST FAILED</span>
+      <strong id="failTitle">実行に失敗しました</strong>
+      <p id="failReason">コードを確認して、もう一度挑戦しよう。</p>
+      <button id="retryBtn">再挑戦</button>
+    </div>
+  </div>
   <script src="core/language-registry.js?v=20260724-1"></script>
   <script src="levels.js?v=20260831-3"></script>
-  <script src="courses/python-common.js?v=20260817-1"></script>
+  <script src="courses/python-common.js?v=20260915-5"></script>
   <script src="courses/python-hints.js?v=20260724-3"></script>
   <script src="engines/python.js?v=20260915-1"></script>
-  <script src="courses/language-variant-tools.js?v=20260915-1"></script>
+  <script src="courses/language-variant-tools.js?v=20260915-5"></script>
   <script src="courses/java.js?v=20260724-1"></script>
   <script src="courses/php.js?v=20260724-1"></script>
   <script src="courses/javascript.js?v=20260724-1"></script>
-  <script src="engines/brace-adapter.js?v=20260915-1"></script>
+  <script src="engines/brace-adapter.js?v=20260915-5"></script>
   <script src="engines/java.js?v=20260724-1"></script>
   <script src="engines/php.js?v=20260724-1"></script>
   <script src="engines/javascript.js?v=20260724-1"></script>
-  <script src="app.js?v=20260915-3"></script>
+  <script src="app.js?v=20260915-5"></script>
 </body>
 </html>

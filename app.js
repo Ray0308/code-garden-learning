@@ -6,7 +6,12 @@ const clearCard = document.querySelector('#clearCard');
 const failCard = document.querySelector('#failCard');
 const titleScreen = document.querySelector('#titleScreen');
 const titleContent = titleScreen.querySelector('.title-content');
-const GAME = { birdName: 'モフリス', storageKey: 'code-dungeon-progress-v3', modeStorageKey: 'code-dungeon-language-mode' };
+const GAME = {
+  birdName: 'モフリス',
+  storageKey: 'code-dungeon-progress-v3',
+  modeStorageKey: 'code-dungeon-language-mode',
+  draftStorageKey: 'code-dungeon-draft-v1'
+};
 const content = window.CODE_GARDEN_CONTENT;
 const languageRegistry = window.CODE_GARDEN_LANGUAGE_REGISTRY;
 if (!languageRegistry) throw new Error('Language registry is not loaded');
@@ -23,9 +28,9 @@ const stageOrder = curriculum.map(item => item.floor).filter(floor => levels[flo
 const supportLabels = { copy: '写経', change: '変更', debug: 'コード修正', fromScratch: '自力入力' };
 const referenceSamples = {
   python:{move:'move()',turnLeft:'turnLeft()',turnRight:'turnRight()',action:'action()',for:'for _ in range(3):\n    move()',print:'print("文字列")',input:'value = input()',attack:'attack()',sayHello:'sayHello()',if:'if mob == "enemy":\n    attack()\nelse:\n    sayHello()',variables:'value = 10',conversion:'value = int("12")',storage:'save("key", value)\nvalue = load("key")'},
-  java:{move:'move();',turnLeft:'turnLeft();',turnRight:'turnRight();',action:'action();',for:'for (int i = 0; i < 3; i++) {\n    move();\n}',print:'System.out.println("文字列");',input:'var value = input();',attack:'attack();',sayHello:'sayHello();',if:'if (mob == "enemy") {\n    attack();\n} else {\n    sayHello();\n}',variables:'var value = 10;',conversion:'var value = Integer.parseInt("12");',storage:'save("key", value);\nvar value = load("key");'},
+  java:{move:'move();',turnLeft:'turnLeft();',turnRight:'turnRight();',action:'action();',for:'for (int i = 0; i < 3; i++) {\n    move();\n}',print:'System.out.println("文字列");',input:'var value = input();',attack:'attack();',sayHello:'sayHello();',if:'if (mob.equals("enemy")) {\n    attack();\n} else {\n    sayHello();\n}',variables:'var value = 10;',conversion:'var value = Integer.parseInt("12");',storage:'save("key", value);\nvar value = load("key");'},
   php:{move:'move();',turnLeft:'turnLeft();',turnRight:'turnRight();',action:'action();',for:'for ($i = 0; $i < 3; $i++) {\n    move();\n}',print:'echo "文字列";',input:'$value = input();',attack:'attack();',sayHello:'sayHello();',if:'if ($mob == "enemy") {\n    attack();\n} else {\n    sayHello();\n}',variables:'$value = 10;',conversion:'$value = (int) "12";',storage:'save("key", $value);\n$value = load("key");'},
-  javascript:{move:'move();',turnLeft:'turnLeft();',turnRight:'turnRight();',action:'action();',for:'for (let i = 0; i < 3; i++) {\n    move();\n}',print:'console.log("文字列");',input:'let value = input();',attack:'attack();',sayHello:'sayHello();',if:'if (mob == "enemy") {\n    attack();\n} else {\n    sayHello();\n}',variables:'let value = 10;',conversion:'let value = parseInt("12");',storage:'save("key", value);\nlet value = load("key");'}
+  javascript:{move:'move();',turnLeft:'turnLeft();',turnRight:'turnRight();',action:'action();',for:'for (let i = 0; i < 3; i++) {\n    move();\n}',print:'console.log("文字列");',input:'let value = input();',attack:'attack();',sayHello:'sayHello();',if:'if (mob === "enemy") {\n    attack();\n} else {\n    sayHello();\n}',variables:'let value = 10;',conversion:'let value = parseInt("12");',storage:'save("key", value);\nlet value = load("key");'}
 };
 const furiganaAnnotations = {
   move:'進む', turnLeft:'左を向く', turnRight:'右を向く', action:'調べる',
@@ -109,6 +114,37 @@ let enemySprites = {};
 let adventurePassword = '';
 let currentHintIndex = 0;
 let titleFitFrame = 0;
+let debugSession = false;
+let usedStepRun = false;
+const KEY_PALETTES = {
+  python: [['    ', 'Tab'], ['()', '( )'], [':', ':'], ['""', '" "'], [' = ', '='], ['\n', '↵']],
+  java: [['    ', 'Tab'], ['()', '( )'], [';', ';'], ['{}', '{ }'], ['""', '" "'], [' = ', '='], [' == ', '=='], [' != ', '!='], ['\n', '↵']],
+  javascript: [['    ', 'Tab'], ['()', '( )'], [';', ';'], ['{}', '{ }'], ['""', '" "'], [' = ', '='], [' === ', '==='], [' !== ', '!=='], ['\n', '↵']],
+  php: [['    ', 'Tab'], ['$', '$'], ['()', '( )'], [';', ';'], ['{}', '{ }'], ['""', '" "'], [' = ', '='], [' == ', '=='], [' != ', '!='], ['\n', '↵']]
+};
+
+function draftKey(language = activeLanguage, floor = currentFloor) {
+  return `${GAME.draftStorageKey}:${language}:${floor}`;
+}
+function saveDraft() {
+  try { localStorage.setItem(draftKey(), editor.value); } catch {}
+}
+function loadDraft(language, floor) {
+  try { return localStorage.getItem(`${GAME.draftStorageKey}:${language}:${floor}`); } catch { return null; }
+}
+
+function renderCodeKeyboard() {
+  const bar = document.querySelector('.code-keyboard');
+  bar.replaceChildren();
+  (KEY_PALETTES[activeLanguage] || KEY_PALETTES.python).forEach(([value, label]) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.dataset.codeKey = value === '\n' ? '\\n' : value;
+    button.textContent = label;
+    button.addEventListener('click', () => insertCode(button.dataset.codeKey === '\\n' ? '\n' : button.dataset.codeKey));
+    bar.append(button);
+  });
+}
 
 function setupLanguageMode() {
   const { meta } = course;
@@ -117,15 +153,7 @@ function setupLanguageMode() {
   document.querySelector('#gameFunctionNote').textContent = meta.functionNote;
   editor.setAttribute('aria-label', meta.editorLabel);
   updateReferenceSamples(levels[currentFloor]);
-  if (activeLanguage !== 'python') {
-    const keys = activeLanguage === 'java' || activeLanguage === 'javascript'
-      ? [['    ', 'Tab'], ['()', '( )'], [';', ';'], ['{', '{'], ['}', '}'], ['\n', '↵']]
-      : [['    ', 'Tab'], ['$', '$'], [';', ';'], ['{', '{'], ['}', '}'], ['\n', '↵']];
-    document.querySelectorAll('[data-code-key]').forEach((button, index) => {
-      button.dataset.codeKey = keys[index][0];
-      button.textContent = keys[index][1];
-    });
-  }
+  renderCodeKeyboard();
 
   document.querySelectorAll('[data-language-mode-select]').forEach(selector => {
     const showAudience = selector.id === 'titleLanguageModeSelect';
@@ -139,8 +167,16 @@ function setupLanguageMode() {
       selector.append(option);
     });
     selector.addEventListener('change', () => {
-      if (!languageRegistry.hasMode(selector.value)) return;
-      try { localStorage.setItem(GAME.modeStorageKey, selector.value); } catch {}
+      if (!languageRegistry.hasMode(selector.value) || selector.value === activeLanguage) return;
+      const nextLanguage = selector.value;
+      const hasDraft = editor.value.trim().length > 0;
+      const confirmed = !hasDraft || window.confirm('言語を切り替えると、今書いているコードはこの言語の下書きとして残します。切り替えてもよいですか？');
+      if (!confirmed) {
+        selector.value = activeLanguage;
+        return;
+      }
+      saveDraft();
+      try { localStorage.setItem(GAME.modeStorageKey, nextLanguage); } catch {}
       window.location.reload();
     });
   });
@@ -183,13 +219,25 @@ function loadProgress() {
 }
 
 function saveProgress(floor) {
+  if (debugSession) return;
   const progress = loadProgress();
   if (!progress.cleared.includes(floor)) progress.cleared.push(floor);
   progress.masteredSkills = [...new Set([...(progress.masteredSkills || []), ...level().capabilities])];
   progress.lastFloor = nextFloor(floor) ?? floor;
   progress.updatedAt = new Date().toISOString();
   progress.language = activeLanguage;
+  const attempts = (progress.attempts || {})[floor] || 0;
+  const hints = (progress.hintsUsed || {})[floor] || 0;
+  progress.goals = progress.goals || {};
+  progress.goals[floor] = {
+    noHints: hints === 0,
+    stepRun: usedStepRun,
+    compact: state.steps <= Math.max(8, Math.floor(level().maxSteps / 2))
+  };
+  progress.attempts = progress.attempts || {};
+  progress.attempts[floor] = attempts;
   localStorage.setItem(progressKey(), JSON.stringify(progress));
+  updateContinueButton();
 }
 
 function recordAttempt() {
@@ -236,6 +284,8 @@ function selectFloor(floor, bypassUnlock = false) {
   const stageLabel = lesson?.stage ? `${lesson.chapter}-${lesson.stage}` : String(floor).padStart(2, '0');
   document.querySelector('.chapter small').textContent = `${floor === 0 ? 'TUTORIAL' : `FLOOR ${floor}`} · ${stageLabel}`;
   document.querySelector('.chapter strong').textContent = level().title;
+  const debugBadge = document.querySelector('#debugBadge');
+  if (debugBadge) debugBadge.hidden = !debugSession;
   const referenceCapabilities = selectedLevel.referenceCapabilities || selectedLevel.capabilities;
   document.querySelectorAll('[data-capability]').forEach(button => { button.hidden = !referenceCapabilities.includes(button.dataset.capability); });
   document.querySelectorAll('[data-concept]').forEach(button => { button.hidden = !(selectedLevel.concepts || []).includes(button.dataset.concept); });
@@ -251,9 +301,9 @@ function selectFloor(floor, bypassUnlock = false) {
   document.querySelector('#missionTitle').textContent = level().mission;
   document.querySelector('#missionDescription').textContent = level().description;
   document.querySelector('#goalState').previousElementSibling.textContent = level().goal;
-  editor.value = selectedLevel.support.initialCode ?? selectedLevel.starter;
-  titleScreen.classList.add('hidden');
-  document.documentElement.classList.remove('title-active');
+  const savedDraft = loadDraft(activeLanguage, floor);
+  editor.value = savedDraft && savedDraft.trim() ? savedDraft : (selectedLevel.support.initialCode ?? selectedLevel.starter);
+  hideTitleScreen();
   document.querySelector('#missionReviewFloor').textContent = floor === 0 ? 'TUTORIAL' : `FLOOR ${String(floor).padStart(2, '0')}`;
   document.querySelector('#missionReviewTitle').textContent = level().mission;
   document.querySelector('#missionReviewDescription').textContent = level().description;
@@ -270,9 +320,12 @@ function selectFloor(floor, bypassUnlock = false) {
   resetState(false);
 }
 
-function startAdventure(firstFloor, testMode = false) {
+function startAdventure(firstFloor, options = false) {
+  const opts = options === true ? { bypassUnlock: true } : (options || {});
+  debugSession = !!opts.debug;
+  usedStepRun = false;
   adventurePassword = createAdventurePassword();
-  selectFloor(firstFloor, testMode);
+  selectFloor(firstFloor, !!(opts.bypassUnlock || opts.debug));
 }
 
 function continueAdventure() {
@@ -291,7 +344,8 @@ function resetState(showMessage = true) {
   prepareLevel(level());
   clearCard.classList.remove('show');
   failCard.classList.remove('show');
-  state = { ...level().start, collected: 0, cleared: false, doorOpen: false, steps: 0, variables: {}, storage: {}, outputValues: [], resolvedMobs: [], inspectedMobs: [], usedConstructs: new Set() };
+  hideRunResult();
+  state = { ...level().start, collected: 0, cleared: false, doorOpen: false, steps: 0, variables: {}, storage: {}, outputValues: [], resolvedMobs: [], inspectedMobs: [], usedConstructs: new Set(), openDoors: new Set(), collectedCells: [] };
   parsedCommands = parseCode().commands;
   executionIndex = 0;
   running = false;
@@ -306,11 +360,25 @@ function retryLevel() {
   resetState();
 }
 
+function hideRunResult() {
+  const banner = document.querySelector('#runResult');
+  if (banner) banner.hidden = true;
+}
+
+function syncRunResult(title, message, kind) {
+  const banner = document.querySelector('#runResult');
+  if (!banner) return;
+  banner.hidden = false;
+  banner.dataset.kind = kind;
+  document.querySelector('#runResultTitle').textContent = title;
+  document.querySelector('#runResultMessage').textContent = message;
+}
+
 function showFailure(message, kind = 'runtime') {
   const failureCopy = {
     syntax: { label: 'SYNTAX ERROR', title: 'コードの書き方を確認しよう', button: 'コードを直す' },
     runtime: { label: 'EXECUTION STOPPED', title: '途中で実行が止まりました', button: '再挑戦' },
-    incomplete: { label: 'MISSION INCOMPLETE', title: 'あと少しでクリアです', button: '作戦を直して再挑戦' }
+    incomplete: { label: 'MISSION INCOMPLETE', title: incompleteTitle(), button: '作戦を直して再挑戦' }
   }[kind];
   failCard.dataset.kind = kind;
   document.querySelector('#failLabel').textContent = failureCopy.label;
@@ -318,17 +386,70 @@ function showFailure(message, kind = 'runtime') {
   document.querySelector('#retryBtn').textContent = failureCopy.button;
   document.querySelector('#failReason').textContent = message || 'コードを確認して、もう一度挑戦しよう。';
   failCard.classList.add('show');
+  syncRunResult(failureCopy.title, message || 'コードを確認して、もう一度挑戦しよう。', kind);
   document.querySelector('#editorState').textContent = kind === 'syntax' ? '構文エラー' : kind === 'incomplete' ? '未達成' : '実行停止';
+}
+
+function incompleteTitle() {
+  if ((level().requiredConstructs || []).some(name => !state.usedConstructs.has(name))) return '必要な構文がまだ実行されていません';
+  if (level().challenge && !challengeComplete()) return '構文は動いたが、計算結果が違います';
+  if (gemsOnLevel().some(gem => !state.collectedCells.includes(`${gem.x},${gem.y}`))) return 'まだ目的の灯へ到着していません';
+  if (level().target && !state.collected) return 'まだ目的地へ到着していません';
+  if (level().door && !state.doorOpen) return '扉がまだ閉まっています';
+  if ((level().doors || []).length && !requiredDoorsOpen()) return '正しい番号の扉がまだ開いていません';
+  if (level().mobs && state.resolvedMobs.length < level().mobs.length) return 'MOBへの対応が残っています';
+  if (state.x !== level().exit.x || state.y !== level().exit.y) return 'まだ目的地へ到着していません';
+  return '階段上で最後のaction()が必要です';
 }
 
 function incompleteMessage() {
   if ((level().requiredConstructs || []).some(name => !state.usedConstructs.has(name))) return 'この階層で学ぶ処理が実行されていません。条件分岐の中も含め、実際に通った処理を確認しよう。';
-  if (level().challenge && !challengeComplete()) return level().challenge.hint || '課題で指定された変数・処理・結果を確認して、もう一度実行しよう。';
+  if (level().challenge && !challengeComplete()) {
+    if (level().challenge.kind === 'storage' && state.storage[level().challenge.key] !== undefined) return '保存値は書き込まれていますが、期待した値と一致していません。';
+    if (level().challenge.kind === 'output' && state.outputValues.length) return '出力は出ていますが、計算結果が違います。値と演算を見直そう。';
+    return level().challenge.hint || '課題で指定された変数・処理・結果を確認して、もう一度実行しよう。';
+  }
+  if (gemsOnLevel().some(gem => !state.collectedCells.includes(`${gem.x},${gem.y}`))) return 'まだ回収していない灯があります。灯のマスで action() を実行しよう。';
   if (level().target && !state.collected) return '灯をまだ回収していません。灯のあるマスで action() を実行しよう。';
-  if (level().door && !state.doorOpen) return '扉がまだ閉まっています。扉の正面で指定された出力を実行しよう。';
+  if (level().door && !state.doorOpen) return '扉がまだ閉まっています。正しい値を出力または保存して扉を開けよう。';
+  if ((level().doors || []).length && !requiredDoorsOpen()) return '正しい値の扉が開いていません。出力した値と扉の番号を見比べよう。';
   if (level().mobs && state.resolvedMobs.length < level().mobs.length) return `未対応のMOBがあと${level().mobs.length - state.resolvedMobs.length}体います。正面から対応しよう。`;
   if (state.x !== level().exit.x || state.y !== level().exit.y) return 'ミッション対象は処理できました。青い階段のマスまで移動しよう。';
   return '階段のマスにいます。最後に action() を実行して次の階層へ進もう。';
+}
+
+function gemsOnLevel() {
+  if (Array.isArray(level().targets) && level().targets.length) return level().targets;
+  return level().target ? [level().target] : [];
+}
+
+function requiredDoorsOpen() {
+  if (level().door && !state.doorOpen) return false;
+  const doors = level().doors || [];
+  if (!doors.length) return true;
+  const expected = level().challenge?.expected;
+  const needed = doors.filter(door => expected === undefined || String(door.password) === String(expected));
+  return (needed.length ? needed : doors).every(door => state.openDoors.has(doors.indexOf(door)));
+}
+
+function closedDoorAt(x, y) {
+  if (level().door && !state.doorOpen && level().door.x === x && level().door.y === y) return true;
+  return (level().doors || []).some((door, index) => door.x === x && door.y === y && !state.openDoors.has(index));
+}
+
+function reactToValue(value) {
+  let opened = false;
+  (level().doors || []).forEach((door, index) => {
+    if (String(value) === String(door.password)) {
+      state.openDoors.add(index);
+      opened = true;
+    }
+  });
+  if (level().door && String(value) === String(level().door.password)) {
+    state.doorOpen = true;
+    opened = true;
+  }
+  return opened;
 }
 
 function parseErrorMessage(error) {
@@ -366,24 +487,41 @@ function renderDungeon() {
     gem.style.setProperty('--x', level().target.x);
     gem.style.setProperty('--y', level().target.y);
     gem.innerHTML = '<i></i>';
+    gem.setAttribute('aria-label', 'まだ回収していない灯');
     dungeon.append(gem);
   }
+  gemsOnLevel().forEach(gem => {
+    if (level().target && gem.x === level().target.x && gem.y === level().target.y) return;
+    if (state.collectedCells.includes(`${gem.x},${gem.y}`)) return;
+    const node = document.createElement('div');
+    node.className = 'dungeon-object gem';
+    node.style.setProperty('--x', gem.x);
+    node.style.setProperty('--y', gem.y);
+    node.innerHTML = '<i></i>';
+    node.setAttribute('aria-label', 'まだ回収していない灯');
+    dungeon.append(node);
+  });
 
   const stairs = document.createElement('div');
   stairs.className = 'dungeon-object stairs';
   stairs.style.setProperty('--x', level().exit.x);
   stairs.style.setProperty('--y', level().exit.y);
   stairs.innerHTML = '<i></i><i></i><i></i>';
+  stairs.setAttribute('aria-label', '次の階層へ降りる階段');
   dungeon.append(stairs);
 
-  if (level().door && !state.doorOpen) {
-    const door = document.createElement('div');
-    door.className = 'dungeon-object password-door';
-    door.style.setProperty('--x', level().door.x);
-    door.style.setProperty('--y', level().door.y);
-    door.textContent = '⌨';
-    dungeon.append(door);
-  }
+  const renderDoor = (door, open, label) => {
+    if (open) return;
+    const node = document.createElement('div');
+    node.className = 'dungeon-object password-door';
+    node.style.setProperty('--x', door.x);
+    node.style.setProperty('--y', door.y);
+    node.textContent = label || door.label || '⌨';
+    node.setAttribute('aria-label', `閉じた扉 ${label || ''}`.trim());
+    dungeon.append(node);
+  };
+  if (level().door) renderDoor(level().door, state.doorOpen, level().door.password);
+  (level().doors || []).forEach((door, index) => renderDoor(door, state.openDoors.has(index), door.label || door.password));
 
   if (level().npc) {
     const npc = document.createElement('img');
@@ -427,7 +565,10 @@ function renderDungeon() {
   document.querySelector('#directionLabel').textContent = directions[state.direction].label;
   document.querySelector('#stepCount').textContent = state.steps;
   document.querySelector('#maxStepCount').textContent = level().maxSteps;
-  if (level().target) {
+  if (gemsOnLevel().length) {
+    document.querySelector('#statLabel').textContent = '回収した灯';
+    document.querySelector('#statValue').textContent = `◆ ${state.collectedCells.length} / ${gemsOnLevel().length}`;
+  } else if (level().target) {
     document.querySelector('#statLabel').textContent = '回収した灯';
     document.querySelector('#statValue').textContent = `◆ ${state.collected} / 1`;
   } else if (level().mobs) {
@@ -453,11 +594,15 @@ function setOutput(mark, message, type = '') {
 function showClear() {
   const lesson = curriculum.find(item => item.floor === currentFloor);
   const isFinalFloor = nextFloor(currentFloor) === undefined;
-  document.querySelector('#clearLabel').textContent = isFinalFloor ? `WORLD ${lesson?.world || 1} COMPLETE` : 'QUEST COMPLETE';
-  document.querySelector('#clearTitle').textContent = isFinalFloor ? `WORLD ${lesson?.world || 1}を踏破した！` : `${level().title}を踏破した！`;
-  document.querySelector('#clearLesson').textContent = `今回覚えたこと：${lesson?.topic || level().goal}`;
+  const chapterEnd = lesson && lesson.stage === 4;
+  failCard.classList.remove('show');
+  hideRunResult();
+  document.querySelector('#clearLabel').textContent = isFinalFloor ? `WORLD ${lesson?.world || 1} COMPLETE` : chapterEnd ? 'CHAPTER CLEAR' : 'QUEST COMPLETE';
+  document.querySelector('#clearTitle').textContent = isFinalFloor ? `WORLD ${lesson?.world || 1}を踏破した！` : chapterEnd ? `${level().title}で章をクリアした！` : `${level().title}を踏破した！`;
+  document.querySelector('#clearLesson').textContent = level().recap || `今回覚えたこと：${lesson?.topic || level().goal}`;
   document.querySelector('#clearSyntax').textContent = lesson?.syntax || '';
   document.querySelector('#againBtn').textContent = isFinalFloor ? 'タイトルへ戻る' : '次の階層へ';
+  syncRunResult(document.querySelector('#clearTitle').textContent, document.querySelector('#clearLesson').textContent, 'success');
   setTimeout(() => clearCard.classList.add('show'), 350);
 }
 
@@ -510,7 +655,7 @@ async function execute(commandInfo) {
   if (command === 'move()') {
     const next = frontPosition();
     const mobIndex = (level().mobs || []).findIndex((mob, index) => mob.x === next.x && mob.y === next.y && !state.resolvedMobs.includes(index));
-    const doorBlocked = level().door && !state.doorOpen && level().door.x === next.x && level().door.y === next.y;
+    const doorBlocked = closedDoorAt(next.x, next.y);
     const npcBlocked = level().npc && level().npc.x === next.x && level().npc.y === next.y;
     const blocked = next.x < 0 || next.x >= COLS || next.y < 0 || next.y >= ROWS || level().obstacles.includes(`${next.x},${next.y}`) || doorBlocked || npcBlocked || mobIndex >= 0;
     if (blocked) {
@@ -534,12 +679,20 @@ async function execute(commandInfo) {
     setOutput('›', `${line}行目: 右を向きました`);
   }
   if (command === 'action()') {
-    if (level().target && state.x === level().target.x && state.y === level().target.y && !state.collected) {
+    const standingGem = gemsOnLevel().find(gem => gem.x === state.x && gem.y === state.y && !state.collectedCells.includes(`${gem.x},${gem.y}`));
+    const gemsDone = gemsOnLevel().every(gem => state.collectedCells.includes(`${gem.x},${gem.y}`));
+    if (standingGem) {
+      state.collectedCells.push(`${standingGem.x},${standingGem.y}`);
+      state.collected = state.collectedCells.length;
+      setOutput('◆', `${line}行目: 灯を回収しました`, 'success');
+      document.querySelector('#goalDot').classList.add('done');
+      document.querySelector('#goalState').textContent = gemsDone ? '階段へ' : '次の灯へ';
+    } else if (level().target && state.x === level().target.x && state.y === level().target.y && !state.collected) {
       state.collected = 1;
       setOutput('◆', `${line}行目: 灯を回収しました`, 'success');
       document.querySelector('#goalDot').classList.add('done');
       document.querySelector('#goalState').textContent = '階段へ';
-    } else if (state.x === level().exit.x && state.y === level().exit.y && (!level().target || state.collected) && (!level().door || state.doorOpen) && (!level().mobs || state.resolvedMobs.length === level().mobs.length) && challengeComplete()) {
+    } else if (state.x === level().exit.x && state.y === level().exit.y && (!level().target || state.collected) && gemsDone && requiredDoorsOpen() && (!level().mobs || state.resolvedMobs.length === level().mobs.length) && challengeComplete()) {
       state.cleared = true;
       setOutput('✓', `${line}行目: 階段を降りました`, 'success');
       document.querySelector('#goalState').textContent = '達成';
@@ -576,14 +729,14 @@ async function execute(commandInfo) {
     try { value = languageEngine.evaluateExpression(commandInfo.value, state.variables); }
     catch (error) { setOutput('×', `${line}行目: ${error.message}`, 'error'); renderDungeon(); return false; }
     state.outputValues.push(value);
-    setOutput('›', String(value));
-    if (level().door && objectIndexAtFront([level().door]) === 0) {
-      if (String(value) === level().door.password) {
-        state.doorOpen = true;
-        document.querySelector('#goalDot').classList.add('done');
-        document.querySelector('#goalState').textContent = '階段へ';
-        setOutput('✓', `${value} ― 扉が開きました`, 'success');
-      } else setOutput('!', `${value} ― 扉は反応しません`, 'warning');
+    if (reactToValue(value)) {
+      document.querySelector('#goalDot').classList.add('done');
+      document.querySelector('#goalState').textContent = '階段へ';
+      setOutput('✓', `${value} ― 扉が開きました`, 'success');
+    } else if (level().door || (level().doors || []).length) {
+      setOutput('!', `${value} ― その値の扉は開かない`, 'warning');
+    } else {
+      setOutput('›', String(value));
     }
   }
   if (command === 'assign') {
@@ -596,7 +749,13 @@ async function execute(commandInfo) {
     try {
       const key = String(languageEngine.evaluateExpression(commandInfo.key, state.variables));
       state.storage[key] = languageEngine.evaluateExpression(commandInfo.value, state.variables);
-      setOutput('›', `${key} を仮想ファイルへ保存しました`, 'success');
+      if (reactToValue(state.storage[key])) {
+        document.querySelector('#goalDot').classList.add('done');
+        document.querySelector('#goalState').textContent = '階段へ';
+        setOutput('✓', `${key} の保存で扉が開きました`, 'success');
+      } else {
+        setOutput('›', `${key} を仮想ファイルへ保存しました`, 'success');
+      }
     } catch (error) { setOutput('×', `${line}行目: ${error.message}`, 'error'); renderDungeon(); return false; }
   }
   if (command === 'load') {
@@ -629,6 +788,7 @@ async function execute(commandInfo) {
 
 async function runAll() {
   if (running) return;
+  usedStepRun = false;
   recordAttempt();
   const parsed = parseCode();
   if (parsed.errors.length) {
@@ -645,6 +805,7 @@ async function runAll() {
   document.querySelector('#stepBtn').disabled = true;
   document.querySelector('#resetBtn').disabled = true;
   document.querySelector('#editorState').textContent = '実行中';
+  document.querySelector('#editorState').parentElement?.classList.add('is-running');
   let failed = false;
   for (let index = 0; index < parsedCommands.length; index++) {
     if (!await execute(parsedCommands[index])) {
@@ -655,6 +816,7 @@ async function runAll() {
     await new Promise(resolve => setTimeout(resolve, 480));
   }
   running = false;
+  document.querySelector('#editorState').parentElement?.classList.remove('is-running');
   document.querySelector('#runBtn').disabled = false;
   document.querySelector('#stepBtn').disabled = false;
   document.querySelector('#resetBtn').disabled = false;
@@ -682,6 +844,7 @@ function finishStepRun() {
 async function runStep() {
   if (running) return;
   if (executionIndex === 0) {
+    usedStepRun = true;
     recordAttempt();
     const parsed = parseCode();
     if (parsed.errors.length) {
@@ -751,6 +914,127 @@ function insertCode(command) {
   editor.focus();
   editor.setSelectionRange(cursor, cursor);
   updateLineNumbers();
+  saveDraft();
+}
+
+function closeTransientUi() {
+  document.querySelector('#functionModal').classList.remove('show');
+  document.querySelector('#functionModal').setAttribute('aria-hidden', 'true');
+  document.querySelector('#inputPanel').classList.remove('show');
+}
+
+function hideTitleScreen() {
+  titleScreen.classList.add('hidden');
+  document.documentElement.classList.remove('title-active');
+  document.querySelector('.app')?.removeAttribute('inert');
+}
+
+function showTitleScreen() {
+  saveDraft();
+  closeTransientUi();
+  clearCard.classList.remove('show');
+  failCard.classList.remove('show');
+  hideRunResult();
+  document.querySelector('#lessonModal').classList.remove('show');
+  document.querySelector('#lessonModal').setAttribute('aria-hidden', 'true');
+  setMobileView('editor');
+  sidebar.classList.add('collapsed');
+  sidePanel.setAttribute('aria-hidden', 'true');
+  titleScreen.classList.remove('hidden');
+  document.documentElement.classList.add('title-active');
+  document.querySelector('.app')?.setAttribute('inert', '');
+  updateContinueButton();
+  renderStageList();
+  fitTitleToViewport();
+}
+
+function updateContinueButton() {
+  const button = document.querySelector('#continueAdventure');
+  const progress = loadProgress();
+  button.hidden = progress.cleared.length === 0;
+}
+
+function setMobileView(view) {
+  closeTransientUi();
+  workspace.dataset.activeMobileView = view;
+  mobileViewButtons.forEach(item => {
+    const selected = item.dataset.mobileView === view;
+    item.classList.toggle('active', selected);
+    item.setAttribute('aria-selected', String(selected));
+  });
+  if (view === 'guide') setSidebarPane('mission', { forceOpen: true });
+}
+
+function trapFocus(container) {
+  const focusable = [...container.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')]
+    .filter(node => !node.hasAttribute('disabled') && node.offsetParent !== null);
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable.at(-1);
+  first.focus();
+  container.addEventListener('keydown', event => {
+    if (event.key !== 'Tab') return;
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }, { once: false });
+}
+
+function syncMobileLayout() {
+  const viewport = window.visualViewport;
+  const height = viewport?.height || window.innerHeight;
+  document.documentElement.style.setProperty('--vvh', `${height}px`);
+}
+
+function renderStageList() {
+  const progress = loadProgress();
+  const summary = document.querySelector('#stageProgressSummary');
+  const list = document.querySelector('#stageList');
+  const skills = document.querySelector('#skillList');
+  const review = document.querySelector('#reviewNotice');
+  if (!summary || !list) return;
+  const cleared = new Set(progress.cleared || []);
+  const current = progress.lastFloor ?? 0;
+  summary.textContent = cleared.size
+    ? `${activeLanguage.toUpperCase()}：${cleared.size} / 48 階層クリア。現在は ${current === 0 ? 'チュートリアル' : current + '階'}。`
+    : `${activeLanguage.toUpperCase()}：まだクリアした階層はありません。`;
+  const skillNames = {
+    move: 'move()', action: 'action()', turn: '向き転換', print: 'print', for: 'for', if: 'if',
+    variables: '変数', storage: 'save/load', attack: 'attack()', sayHello: 'sayHello()'
+  };
+  skills.replaceChildren();
+  (progress.masteredSkills || []).forEach(name => {
+    if (!skillNames[name]) return;
+    const chip = document.createElement('span');
+    chip.textContent = skillNames[name];
+    skills.append(chip);
+  });
+  list.replaceChildren();
+  curriculum.forEach(item => {
+    const floor = item.floor;
+    const card = document.createElement('button');
+    card.type = 'button';
+    const unlocked = floor === 0 || floor === 1 || cleared.has(floor) || cleared.has(item.prerequisite) || (levels[floor].prerequisite === null);
+    const status = cleared.has(floor) ? 'クリア済み' : unlocked ? '挑戦可能' : '未解放';
+    card.className = `stage-card ${cleared.has(floor) ? 'cleared' : unlocked ? 'open' : 'locked'}`;
+    if (floor === current) card.classList.add('current');
+    card.disabled = !unlocked;
+    card.innerHTML = `<span>${floor === 0 ? 'T' : floor}</span><strong>${item.title}</strong><small>${item.topic} · ${status}</small>`;
+    if (unlocked) card.addEventListener('click', () => startAdventure(floor));
+    list.append(card);
+  });
+  if (progress.updatedAt) {
+    const elapsed = Date.now() - Date.parse(progress.updatedAt);
+    if (elapsed > 7 * 24 * 60 * 60 * 1000 && cleared.size) {
+      review.hidden = false;
+      review.textContent = `久しぶりですね。前回は ${current === 0 ? 'チュートリアル' : current + '階'} まで進んでいます。続きから、前回の構文を短く復習しながら再開できます。`;
+    } else review.hidden = true;
+  } else review.hidden = true;
+  document.documentElement.dataset.progressTier = String(Math.min(4, Math.floor(cleared.size / 12)));
 }
 
 document.querySelectorAll('[data-reference]').forEach(button => button.addEventListener('click', () => {
@@ -761,6 +1045,7 @@ document.querySelectorAll('[data-reference]').forEach(button => button.addEventL
   document.querySelector('#functionDetailHint').textContent = button.querySelector(':scope > span:last-child')?.textContent || '';
   modal.classList.add('show');
   modal.setAttribute('aria-hidden', 'false');
+  trapFocus(modal);
 }));
 
 document.querySelector('#closeFunctionDetail').addEventListener('click', () => {
@@ -774,16 +1059,10 @@ document.querySelector('#insertFunctionCode').addEventListener('click', () => {
   document.querySelector('#functionModal').setAttribute('aria-hidden', 'true');
 });
 
-document.querySelectorAll('[data-code-key]').forEach(button => button.addEventListener('click', () => {
-  const code = button.dataset.codeKey === '\\n' ? '\n' : button.dataset.codeKey;
-  insertCode(code);
-}));
-
 const workspace = document.querySelector('.workspace');
 const mobileViewButtons = [...document.querySelectorAll('[data-mobile-view]')];
 mobileViewButtons.forEach(button => button.addEventListener('click', () => {
-  workspace.dataset.activeMobileView = button.dataset.mobileView;
-  mobileViewButtons.forEach(item => item.classList.toggle('active', item === button));
+  setMobileView(button.dataset.mobileView);
 }));
 
 document.querySelector('#referenceToggle').addEventListener('click', event => {
@@ -796,9 +1075,10 @@ document.querySelector('#referenceToggle').addEventListener('click', event => {
 const sidebar = document.querySelector('#ideSidebar');
 const sidePanel = document.querySelector('#sidePanel');
 const activityButtons = [...document.querySelectorAll('[data-sidebar-pane]')];
-function setSidebarPane(paneName) {
+function setSidebarPane(paneName, options = {}) {
   const selected = activityButtons.find(button => button.dataset.sidebarPane === paneName);
-  const isClosing = selected.classList.contains('active') && !sidebar.classList.contains('collapsed');
+  if (!selected) return;
+  const isClosing = !options.forceOpen && selected.classList.contains('active') && !sidebar.classList.contains('collapsed');
   activityButtons.forEach(button => button.classList.toggle('active', !isClosing && button === selected));
   document.querySelectorAll('[data-pane]').forEach(pane => {
     const visible = !isClosing && pane.dataset.pane === paneName;
@@ -825,52 +1105,47 @@ document.querySelector('#stepBtn').addEventListener('click', runStep);
 document.querySelector('#resetBtn').addEventListener('click', () => resetState());
 document.querySelector('#againBtn').addEventListener('click', () => {
   const followingFloor = nextFloor(currentFloor);
-  if (followingFloor !== undefined && loadProgress().cleared.includes(currentFloor)) selectFloor(followingFloor);
-  else {
-    clearCard.classList.remove('show');
-    titleScreen.classList.remove('hidden');
-    document.documentElement.classList.add('title-active');
-    fitTitleToViewport();
+  if (followingFloor !== undefined && (debugSession || loadProgress().cleared.includes(currentFloor))) {
+    selectFloor(followingFloor, debugSession);
+  } else {
+    showTitleScreen();
   }
 });
 document.querySelector('#retryBtn').onclick = retryLevel;
+document.querySelector('#runResultRetry')?.addEventListener('click', retryLevel);
 document.querySelector('#clearOutput').addEventListener('click', () => setOutput('›', '出力を消去しました'));
 document.querySelector('#hintBtn').addEventListener('click', showNextHint);
 document.querySelector('#birdNameTitle').textContent = GAME.birdName;
-document.querySelector('#continueAdventure').hidden = loadProgress().cleared.length === 0;
+updateContinueButton();
 document.querySelector('.brand').addEventListener('click', event => {
   event.preventDefault();
-  clearCard.classList.remove('show');
-  failCard.classList.remove('show');
-  document.querySelector('#lessonModal').classList.remove('show');
-  document.querySelector('#lessonModal').setAttribute('aria-hidden', 'true');
-  titleScreen.classList.remove('hidden');
-  document.documentElement.classList.add('title-active');
-  fitTitleToViewport();
+  showTitleScreen();
 });
 document.querySelector('#startTutorial').addEventListener('click', () => startAdventure(0));
 document.querySelector('#continueAdventure').addEventListener('click', continueAdventure);
 document.querySelector('#skipTutorial').addEventListener('click', () => startAdventure(1, true));
-const debugUnlocked = new URLSearchParams(location.search).has('debug')
-  || ['localhost', '127.0.0.1'].includes(location.hostname);
 const testFloorPicker = document.querySelector('.test-floor-picker');
 const testFloorButtons = document.querySelector('#testFloorButtons');
-testFloorPicker.hidden = !debugUnlocked;
-if (debugUnlocked) {
-  stageOrder.forEach((floor, index) => {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.dataset.testFloor = floor;
-    const floorLabel = floor === 0 ? 'T' : String(floor);
-    button.textContent = floorLabel;
-    button.title = floor === 0 ? `Tutorial. ${levels[floor].title}` : `FLOOR ${floor}. ${levels[floor].title}`;
-    button.setAttribute('aria-label', floor === 0 ? `Tutorial：${levels[floor].title}` : `FLOOR ${floor}：${levels[floor].title}`);
-    button.addEventListener('click', () => startAdventure(floor, true));
-    testFloorButtons.appendChild(button);
-  });
-}
-document.querySelector('#lessonStart').addEventListener('click', () => { document.querySelector('#lessonModal').classList.remove('show'); document.querySelector('#lessonModal').setAttribute('aria-hidden', 'true'); });
-editor.addEventListener('input', updateLineNumbers);
+testFloorPicker.hidden = false;
+stageOrder.forEach(floor => {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.dataset.testFloor = floor;
+  const floorLabel = floor === 0 ? 'T' : String(floor);
+  button.textContent = floorLabel;
+  button.title = floor === 0 ? `Tutorial. ${levels[floor].title}` : `FLOOR ${floor}. ${levels[floor].title}`;
+  button.setAttribute('aria-label', floor === 0 ? `Tutorial：${levels[floor].title}` : `FLOOR ${floor}：${levels[floor].title}`);
+  button.addEventListener('click', () => startAdventure(floor, { bypassUnlock: true, debug: true }));
+  testFloorButtons.appendChild(button);
+});
+document.querySelector('#lessonStart').addEventListener('click', () => {
+  document.querySelector('#lessonModal').classList.remove('show');
+  document.querySelector('#lessonModal').setAttribute('aria-hidden', 'true');
+});
+editor.addEventListener('input', () => {
+  updateLineNumbers();
+  saveDraft();
+});
 editor.addEventListener('scroll', () => { lineNumbers.scrollTop = editor.scrollTop; });
 editor.addEventListener('keydown', event => {
   if (event.key === 'Tab') {
@@ -878,10 +1153,23 @@ editor.addEventListener('keydown', event => {
     const startPosition = editor.selectionStart;
     editor.value = `${editor.value.slice(0, startPosition)}    ${editor.value.slice(editor.selectionEnd)}`;
     editor.setSelectionRange(startPosition + 4, startPosition + 4);
+    saveDraft();
   }
   if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
     event.preventDefault();
     runAll();
+  }
+});
+document.addEventListener('keydown', event => {
+  if (event.key !== 'Escape') return;
+  if (document.querySelector('#functionModal').classList.contains('show')) {
+    document.querySelector('#functionModal').classList.remove('show');
+    document.querySelector('#functionModal').setAttribute('aria-hidden', 'true');
+  } else if (document.querySelector('#lessonModal').classList.contains('show')) {
+    document.querySelector('#lessonModal').classList.remove('show');
+    document.querySelector('#lessonModal').setAttribute('aria-hidden', 'true');
+  } else if (failCard.classList.contains('show')) {
+    retryLevel();
   }
 });
 
@@ -916,7 +1204,10 @@ updateLineNumbers();
 resetState(false);
 prepareEnemySprites();
 document.documentElement.classList.add('title-active');
+document.querySelector('.app')?.setAttribute('inert', '');
+renderStageList();
+syncMobileLayout();
 fitTitleToViewport();
-window.addEventListener('resize', fitTitleToViewport);
-window.visualViewport?.addEventListener('resize', fitTitleToViewport);
+window.addEventListener('resize', () => { fitTitleToViewport(); syncMobileLayout(); });
+window.visualViewport?.addEventListener('resize', () => { fitTitleToViewport(); syncMobileLayout(); });
 new ResizeObserver(fitTitleToViewport).observe(titleContent);

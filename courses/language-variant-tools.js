@@ -27,7 +27,8 @@
     if (language === 'javascript') {
       return value.replace(/\bTrue\b/g, 'true').replace(/\bFalse\b/g, 'false')
         .replace(/\band\b/g, '&&').replace(/\bor\b/g, '||')
-        .replace(/\bint\(/g, 'parseInt(').replace(/\blen\(([^()]+)\)/g, '$1.length');
+        .replace(/\bint\(/g, 'parseInt(').replace(/\blen\(([^()]+)\)/g, '$1.length')
+        .replace(/([^!=<>])==([^=])/g, '$1===$2').replace(/([^!=<>])!=([^=])/g, '$1!==$2');
     }
     if (language === 'java') {
       value = value.replace(/\bTrue\b/g, 'true').replace(/\bFalse\b/g, 'false')

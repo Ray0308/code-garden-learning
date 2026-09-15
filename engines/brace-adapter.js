@@ -50,6 +50,7 @@
         .replace(/([A-Za-z_]\w*)\.get\(([^()]+)\)/g, '$1[$2]');
     } else if (language === 'javascript') {
       value = value.replace(/\bparseInt\(/g, 'int(')
+        .replace(/===/g, '==').replace(/!==/g, '!=')
         .replace(/([A-Za-z_]\w*)\.length\b/g, 'len($1)');
     } else {
       value = value.replace(/\$([A-Za-z_]\w*)/g, '$1')

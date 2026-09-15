@@ -220,9 +220,12 @@ assert.ok(pythonEngine.compile('number = 12\nprint(number + 3)', {
 assert.deepEqual([...new Set(curriculum.filter(item => item.world === 3).map(item => item.topic))].length >= 20, true, '共通編は十分な学習項目を含みます');
 assert.ok(curriculum.some(item => item.topic === '仮想保存') && curriculum.some(item => item.topic === '仮想読込'), '保存と読込を共通編に含みます');
 for (const floor of Object.keys(levels).map(Number).filter(value => value >= 24)) {
-  assert.match(levels[floor].description, /print\(\)で出力|save\(\)で保存/, `${floor}階層は課題値を出力または保存することを明記します`);
-  assert.match(levels[floor].goal, /2歩進んで階段でaction\(\)/, `${floor}階層は課題後の階段操作を明記します`);
+  assert.match(levels[floor].description, /扉|箱|灯|道/, `${floor}階層は結果がダンジョンへ反映することを説明する`);
+  assert.match(levels[floor].goal, /action\(\)/, `${floor}階層は階段操作を明記します`);
+  assert.ok(levels[floor].layoutId || levels[floor].doors || levels[floor].door || levels[floor].targets, `${floor}階層に固有の仕掛けが必要です`);
 }
+const layoutIds = [...new Set(Object.keys(levels).map(Number).filter(value => value >= 24).map(floor => levels[floor].layoutId))];
+assert.ok(layoutIds.length >= 6, '24階以降は最低6種類のマップ構造を使う');
 assert.match(pythonEngine.formatError({ line: 2, text: '???' }), /^2行目:/, '言語エンジンが初心者向けエラーを整形します');
 assert.ok(pythonEngine.compile('for _ in range(2):\n    move()', { capabilities: ['move'] }).errors.length > 0, '未習得の構文は教材データに従って拒否します');
 assert.ok(pythonEngine.compile('move()\nmove()\naction()', { capabilities: levels[23].capabilities, level: levels[23] }).errors.some(error => /for を使って/.test(error.text)), '三影の門は命令の羅列だけではクリアできません');
@@ -254,10 +257,14 @@ assert.match(appSource, /languageRegistry\.listModes\(\)/, '言語選択肢を�
 assert.match(appSource, /progressKey\(\).+activeLanguage/, '進捗を言語モードごとに分離します');
 assert.equal(/collectGet\(\)|goDown\(\)/.test(appSource), false, '廃止した旧コマンドがapp.jsに残っています');
 assert.equal(/for\\s\+_|range\\\(/.test(appSource), false, 'Python固有の構文解析をapp.jsに残さないでください');
-assert.match(appSource, /stageOrder\.forEach\(\(floor, index\)/, 'テスト用ステージ選択は教材データから自動生成します');
+assert.match(appSource, /stageOrder\.forEach\(floor =>/, 'テスト用ステージ選択は教材データから自動生成します');
 assert.match(appSource, /function finishStepRun\(\)[\s\S]*?incompleteMessage\(\)/, '1行ずつ実行の終了時も未達成を判定します');
-assert.match(appSource, /searchParams\)\.has\('debug'\)/, '通常公開ではデバッグ階層を隠し、?debug=1 で出します');
-assert.match(appSource, /testFloorPicker\.hidden = !debugUnlocked/, '本番ホストではデバッグ用階層ピッカーを隠します');
-assert.match(appSource, /testFloorButtons\.appendChild\(button\)/, 'デバッグ時は全階層ボタンを生成します');
+assert.match(appSource, /debug: true/, 'デバッグ階層選択は通常進捗を壊すフラグを付ける');
+assert.match(appSource, /testFloorPicker\.hidden = false/, '通常公開でもデバッグ用階層ピッカーを出します');
+assert.match(appSource, /testFloorButtons\.appendChild\(button\)/, '全階層ボタンを生成します');
+assert.match(appSource, /function showTitleScreen\(/, 'ホームへ戻る処理でタイトル操作を復旧します');
+assert.match(appSource, /function setMobileView\(/, 'モバイル画面切替を一箇所で処理します');
+assert.match(appSource, /forceOpen: true/, 'ミッションタブは本文を直接開きます');
+assert.match(appSource, /syncRunResult/, 'コード画面でも実行結果を表示します');
 assert.equal(/data-test-floor="\d+"/.test(fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8')), false, 'テスト用ステージをHTMLへ固定記述しないでください');
 console.log('全階層の模範解答・当たり判定・文言監査に合格しました');

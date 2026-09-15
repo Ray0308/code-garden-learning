@@ -1,0 +1,23 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const appSource = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
+const htmlSource = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+const stylesSource = fs.readFileSync(path.join(__dirname, '..', 'styles.css'), 'utf8');
+const titleSource = fs.readFileSync(path.join(__dirname, '..', 'title.css'), 'utf8');
+
+assert.match(titleSource, /pointer-events:none/, 'hidden title does not steal clicks');
+assert.match(titleSource, /z-index:200/, 'title stays above game chrome');
+assert.match(appSource, /inert/, 'game shell is inert on the title screen');
+assert.match(htmlSource, /role="tablist"/, 'mobile tabs expose tablist');
+assert.match(htmlSource, /aria-selected/, 'mobile tabs expose selected state');
+assert.match(appSource, /data-mobile-view === 'guide'[\s\S]*forceOpen: true|view === 'guide'[\s\S]*forceOpen: true/, 'mission tab opens mission copy');
+assert.match(htmlSource, /id="runResult"/, 'code tab has a visible run result');
+assert.match(htmlSource, /id="resultOverlay"/, 'fail/clear cards are not trapped in the dungeon panel');
+assert.match(htmlSource, /interactive-widget=resizes-content/, 'keyboard can resize the layout');
+assert.match(stylesSource, /--vvh/, 'visual viewport height is used on phones');
+assert.match(appSource, /draftStorageKey/, 'language drafts are stored separately');
+assert.match(appSource, /if \(debugSession\) return/, 'debug starts do not rewrite progress');
+assert.match(htmlSource, /id="stageSelect"/, 'normal users get a stage list');
+assert.match(appSource, /KEY_PALETTES/, 'each language has a symbol palette');
+console.log('Mobile/UI source regressions passed.');
