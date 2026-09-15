@@ -32,7 +32,8 @@ const furiganaAnnotations = {
   attack:'攻撃', sayHello:'あいさつ', input:'入力', print:'出力', echo:'出力',
   'System.out.println':'出力', 'console.log':'出力', for:'繰り返す', if:'もし',
   else:'それ以外', save:'保存', load:'読込', int:'整数化',
-  'Integer.parseInt':'整数化', parseInt:'整数化'
+  'Integer.parseInt':'整数化', parseInt:'整数化', '=':'代入', '==':'等しい',
+  '!=':'等しくない', '>=':'以上', '<=':'以下', True:'真', False:'偽', true:'真', false:'偽', equals:'等しい'
 };
 
 function referenceVariable(selectedLevel, reference) {
@@ -43,6 +44,7 @@ function referenceVariable(selectedLevel, reference) {
 function referenceSample(selectedLevel, reference) {
   const variable = referenceVariable(selectedLevel, reference);
   let sample = referenceSamples[activeLanguage][reference];
+  if (activeLanguage === 'java') sample = sample.replace(/mob == "enemy"/g, 'mob.equals("enemy")');
   sample = sample.replace(/\bvalue\b/g, variable);
   if (reference === 'print' && selectedLevel.capabilities.includes('input')) {
     if (activeLanguage === 'java') sample = `System.out.println(${variable});`;
@@ -54,13 +56,23 @@ function referenceSample(selectedLevel, reference) {
 }
 
 function renderFurigana(container, sample, compact = false) {
-  const shown = compact ? sample.replace(/\s+/g, ' ').trim() : sample;
+  const shown = compact ? sample.split(/("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')/g)
+    .map((part, index) => index % 2 ? part : part.replace(/\s+/g, ' ')).join('').trim() : sample;
   const code = document.createElement('code');
   const tokens = Object.keys(furiganaAnnotations).sort((a, b) => b.length - a.length);
-  const pattern = new RegExp(`(${tokens.map(token => token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'g');
+  const alternatives = tokens.map(token => {
+    const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return /^[A-Za-z_]/.test(token) ? `(?<![A-Za-z0-9_])${escaped}(?![A-Za-z0-9_])` : escaped;
+  });
+  const pattern = new RegExp(`"(?:\\\\.|[^"\\\\])*"|'(?:\\\\.|[^'\\\\])*'|${alternatives.join('|')}`, 'g');
   let cursor = 0;
   for (const match of shown.matchAll(pattern)) {
     code.append(document.createTextNode(shown.slice(cursor, match.index)));
+    if (match[0].startsWith('"') || match[0].startsWith("'")) {
+      code.append(document.createTextNode(match[0]));
+      cursor = match.index + match[0].length;
+      continue;
+    }
     const ruby = document.createElement('ruby');
     ruby.append(document.createTextNode(match[0]));
     const reading = document.createElement('rt');
@@ -153,7 +165,15 @@ function nextFloor(floor) {
 function loadProgress() {
   try {
     const saved = localStorage.getItem(progressKey());
-    if (saved) return JSON.parse(saved);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed && typeof parsed === 'object' && Array.isArray(parsed.cleared)) {
+        return { ...parsed, language: activeLanguage,
+          cleared: [...new Set(parsed.cleared.filter(floor => Number.isInteger(floor) && levels[floor]))],
+          lastFloor: Number.isInteger(parsed.lastFloor) && levels[parsed.lastFloor] ? parsed.lastFloor : stageOrder[0],
+          masteredSkills: Array.isArray(parsed.masteredSkills) ? parsed.masteredSkills.filter(value => typeof value === 'string') : [] };
+      }
+    }
     return { language: activeLanguage, cleared: [], lastFloor: stageOrder[0] };
   }
   catch { return { language: activeLanguage, cleared: [], lastFloor: stageOrder[0] }; }
@@ -268,7 +288,7 @@ function resetState(showMessage = true) {
   prepareLevel(level());
   clearCard.classList.remove('show');
   failCard.classList.remove('show');
-  state = { ...level().start, collected: 0, cleared: false, doorOpen: false, steps: 0, variables: {}, storage: {}, outputValues: [], resolvedMobs: [], inspectedMobs: [] };
+  state = { ...level().start, collected: 0, cleared: false, doorOpen: false, steps: 0, variables: {}, storage: {}, outputValues: [], resolvedMobs: [], inspectedMobs: [], usedConstructs: new Set() };
   parsedCommands = parseCode().commands;
   executionIndex = 0;
   running = false;
@@ -299,6 +319,7 @@ function showFailure(message, kind = 'runtime') {
 }
 
 function incompleteMessage() {
+  if ((level().requiredConstructs || []).some(name => !state.usedConstructs.has(name))) return 'この階層で学ぶ処理が実行されていません。条件分岐の中も含め、実際に通った処理を確認しよう。';
   if (level().challenge && !challengeComplete()) return level().challenge.hint || '課題で指定された変数・処理・結果を確認して、もう一度実行しよう。';
   if (level().target && !state.collected) return '灯をまだ回収していません。灯のあるマスで action() を実行しよう。';
   if (level().door && !state.doorOpen) return '扉がまだ閉まっています。扉の正面で指定された出力を実行しよう。';
@@ -448,6 +469,7 @@ function objectIndexAtFront(objects = []) {
 }
 
 function challengeComplete() {
+  if ((level().requiredConstructs || []).some(name => !state.usedConstructs.has(name))) return false;
   const challenge = level().challenge;
   if (!challenge) return true;
   const actual = challenge.kind === 'variable' ? state.variables[challenge.name]
@@ -461,6 +483,7 @@ function challengeComplete() {
 
 async function execute(commandInfo) {
   const { command, line } = commandInfo;
+  for (const name of languageEngine.usedConstructs([commandInfo], false)) state.usedConstructs.add(name);
   if (command === 'conditional') {
     let condition;
     try {

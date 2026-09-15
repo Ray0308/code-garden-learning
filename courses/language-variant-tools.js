@@ -14,6 +14,15 @@
   }
 
   function expression(source, language, names = new Set()) {
+    const strings = [];
+    const masked = source.replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'/g, text => {
+      strings.push(text);
+      return `"__CG_STRING_${strings.length - 1}__"`;
+    });
+    return convertExpression(masked, language, names).replace(/"__CG_STRING_(\d+)__"/g, (_, index) => strings[index]);
+  }
+
+  function convertExpression(source, language, names) {
     let value = source.trim();
     if (language === 'javascript') {
       return value.replace(/\bTrue\b/g, 'true').replace(/\bFalse\b/g, 'false')
@@ -26,6 +35,7 @@
         .replace(/\bint\(/g, 'Integer.parseInt(').replace(/\blen\(([^()]+)\)/g, '$1.size()');
       value = value.replace(/^\{((?:"[^"]*"|'[^']*')\s*:\s*[^{}]+)\}$/, (_, body) => `Map.of(${body.replace(/\s*:\s*/g, ', ')})`);
       value = value.replace(/\b(\w+)\[([^\]]+)\]/g, '$1.get($2)');
+      value = value.replace(/\b([A-Za-z_]\w*)\s*==\s*("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')/g, '$1.equals($2)');
       value = value.replace(/^\[([^\[\]]*)\]$/, 'List.of($1)');
       return value;
     }
@@ -74,9 +84,10 @@
     return `${text};`;
   }
 
-  function fromPython(source, language) {
+  function fromPython(source, language, knownNames = []) {
     if (!source) return source;
     const names = collectVariables(source);
+    for (const name of knownNames) names.add(name);
     const declared = new Set();
     const output = [];
     const stack = [];
@@ -152,6 +163,7 @@
       .replace(/\band\b/g, '&&')
       .replace(/\bor\b/g, '||');
     if (language === 'java') {
+      result = result.replace(/\bmob\s*==\s*"enemy"/g, 'mob.equals("enemy")');
       result = result.replace(/for _ in range\((\w+)\):/g, 'for (int i = 0; i < $1; i++) {')
         .replace(/range\(\)の回数/g, 'for文の繰り返し回数').replace(/range\(\)/g, 'for文');
     } else if (language === 'javascript') {
@@ -176,23 +188,30 @@
       curriculum: clone(base.curriculum).map(item => ({ ...item, language: options.id })),
       levels: clone(base.levels)
     };
-    for (const level of Object.values(course.levels)) {
+    for (const [floor, level] of Object.entries(course.levels)) {
+      const convertCode = source => {
+        const converted = fromPython(source, options.id);
+        if (floor !== '47' || options.id === 'php' || !converted) return converted;
+        // This exercise reads result after the branch: declare it in the outer scope.
+        return converted.replace(/^(\s*)(?:var|let) result =/gm, '$1result =')
+          .replace(/^if \(/m, `${options.id === 'java' ? 'String' : 'let'} result = "";\nif (`);
+      };
       level.mission = translatedSyntax(level.mission, options.id);
       level.description = translatedSyntax(level.description, options.id);
       level.goal = translatedSyntax(level.goal, options.id);
-      level.starter = fromPython(level.starter, options.id);
-      level.solution = fromPython(level.solution, options.id);
+      level.starter = convertCode(level.starter);
+      level.solution = convertCode(level.solution);
       if (level.support) {
         level.support.instruction = translatedSyntax(level.support.instruction, options.id);
-        level.support.initialCode = fromPython(level.support.initialCode, options.id);
-        level.support.example = fromPython(level.support.example, options.id);
+        level.support.initialCode = convertCode(level.support.initialCode);
+        level.support.example = convertCode(level.support.example);
         level.support.hints = (level.support.hints || []).map(hint => translatedSyntax(hint, options.id));
       }
     }
     course.curriculum.forEach(item => {
       item.topic = translatedSyntax(item.topic, options.id);
       item.syntax = /^[A-Za-z_]\w*\s*=(?!=)/.test(item.syntax.trim())
-        ? translatedSyntax(fromPython(item.syntax, options.id), options.id)
+        ? fromPython(item.syntax, options.id, collectVariables(base.levels[item.floor].solution || ''))
         : translatedSyntax(item.syntax, options.id);
     });
     const loopWord = options.id === 'java' ? 'for (int i = 0; i < 3; i++)'

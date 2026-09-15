@@ -129,37 +129,49 @@
     return operations[ast.operator]();
   }
 
+  // Inspect parsed nodes, never comments or strings that merely look like code.
+  function usedConstructs(commands, recursive = true) {
+    const used = new Set();
+    function expression(node) {
+      if (!node || typeof node !== 'object') return;
+      if (node.type === 'literal') return;
+      if (node.type === 'list') used.add('list');
+      if (node.type === 'dict') used.add('dictionary');
+      if (node.operator === '%') used.add('modulo');
+      if (node.type === 'call' && node.name === 'int') used.add('conversion');
+      if (node.type === 'call' && node.name === 'len') used.add('length');
+      for (const value of Object.values(node)) {
+        if (Array.isArray(value)) value.flat().forEach(expression);
+        else if (value && typeof value === 'object') expression(value);
+      }
+    }
+    for (const item of commands) {
+      for (const name of item.constructs || []) used.add(name);
+      if (item.command === 'conditional') {
+        used.add('if');
+        if (recursive) for (const name of usedConstructs([...item.thenCommands, ...item.elseCommands])) used.add(name);
+      }
+      if (['print', 'save', 'load'].includes(item.command)) used.add(item.command);
+      if (item.command === 'print' && item.value?.type === 'variable' && item.value.name === 'mob') used.add('printMob');
+      expression(item.value); expression(item.condition); expression(item.key);
+    }
+    return used;
+  }
+
   const engine = {
     id: 'python',
     label: 'Python',
     parseExpression,
     evaluateExpression: evaluate,
+    usedConstructs,
     compile(source, context = {}) {
       const capabilities = new Set(context.capabilities || []);
       const errors = [];
       const lines = source.split('\n').map(raw => raw.replace(/\t/g, '    '));
-      const constructMatchers = {
-        for: /^\s*for\s+_\s+in\s+range\(\d+\):\s*$/m,
-        if: /^\s*if\s+.+:\s*$/m,
-        conversion: /\bint\s*\(/,
-        list: /=\s*\[/,
-        dictionary: /=\s*\{/,
-        length: /\blen\s*\(/,
-        print: /\bprint\s*\(/,
-        printMob: /\bprint\s*\(\s*mob\s*\)/,
-        modulo: /%/,
-        save: /\bsave\s*\(/,
-        load: /\bload\s*\(/
-      };
       const constructLabels = {
         for:'for', if:'if', conversion:'int()', list:'リスト', dictionary:'辞書',
         length:'len()', print:'print()', printMob:'受け取ったmobの出力', modulo:'%', save:'save()', load:'load()'
       };
-      for (const name of context.level?.requiredConstructs || []) {
-        if (constructMatchers[name] && !constructMatchers[name].test(source)) {
-          errors.push({ line: 1, text: `このステージは ${constructLabels[name]} を使ってください` });
-        }
-      }
       const unavailable = (name, line) => {
         if (!capabilities.has(name)) errors.push({ line, text: `${name} はこのステージではまだ使えません` });
       };
@@ -187,7 +199,8 @@
             const repeat = Number(loop[1]);
             if (!parsed.commands.length) errors.push({ line, text: 'for の中にインデントした命令が必要です' });
             if (repeat < 1 || repeat > 20) errors.push({ line, text: 'range() は1〜20にしてください' });
-            else for (let count = 0; count < repeat; count++) commands.push(...parsed.commands);
+            else if (parsed.commands.length * repeat + commands.length > 10000) errors.push({ line, text: '繰り返しの命令が多すぎます。回数や入れ子を減らしてください' });
+            else for (let count = 0; count < repeat; count++) commands.push(...parsed.commands.map(item => ({ ...item, constructs: [...(item.constructs || []), 'for'] })));
             index = parsed.index;
             continue;
           }
@@ -241,7 +254,13 @@
         }
         return { commands, index };
       }
-      return { commands: parseBlock(0, 0).commands, errors };
+      const parsed = parseBlock(0, 0);
+      if (parsed.index < lines.length) errors.push({ line: parsed.index + 1, text: '対応するifのないelse、または不正な字下げがあります' });
+      const used = usedConstructs(parsed.commands);
+      for (const name of context.level?.requiredConstructs || []) {
+        if (!used.has(name)) errors.push({ line: 1, text: `このステージは ${constructLabels[name] || name} を使ってください` });
+      }
+      return { commands: parsed.commands, errors };
     },
     formatError(error) {
       return `${error.line}行目: ${error.text}`;

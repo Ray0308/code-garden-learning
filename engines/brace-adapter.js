@@ -35,11 +35,17 @@
   }
 
   function normalizeExpression(source, language) {
-    let value = source.trim().replace(/&&/g, ' and ').replace(/\|\|/g, ' or ')
+    const strings = [];
+    const masked = source.replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'/g, text => {
+      strings.push(text);
+      return `__CG_STRING_${strings.length - 1}__`;
+    });
+    let value = masked.trim().replace(/&&/g, ' and ').replace(/\|\|/g, ' or ')
       .replace(/\btrue\b/gi, 'True').replace(/\bfalse\b/gi, 'False');
     if (language === 'java') {
       value = javaCollections(value)
         .replace(/Integer\.parseInt\(/g, 'int(')
+        .replace(/([A-Za-z_]\w*)\.equals\(([^()]*)\)/g, '$1 == $2')
         .replace(/([A-Za-z_]\w*)\.size\(\)/g, 'len($1)')
         .replace(/([A-Za-z_]\w*)\.get\(([^()]+)\)/g, '$1[$2]');
     } else if (language === 'javascript') {
@@ -49,10 +55,10 @@
       value = value.replace(/\$([A-Za-z_]\w*)/g, '$1')
         .replace(/count\(/g, 'len(')
         .replace(/\(int\)\s*\(([^()]*)\)/g, 'int($1)')
-        .replace(/\(int\)\s*("[^"]*"|'[^']*')/g, 'int($1)')
-        .replace(/\[((?:"[^"]*"|'[^']*')\s*=>[^\]]+)\]/g, (_, body) => `{${body.replace(/\s*=>\s*/g, ': ')}}`);
+        .replace(/\(int\)\s*(__CG_STRING_\d+__)/g, 'int($1)')
+        .replace(/\[([^\[\]]*=>[^\[\]]*)\]/g, (_, body) => `{${body.replace(/\s*=>\s*/g, ': ')}}`);
     }
-    return value.trim();
+    return value.trim().replace(/__CG_STRING_(\d+)__/g, (_, index) => strings[index]);
   }
 
   function normalize(source, language) {
@@ -74,7 +80,7 @@
         indent++;
         continue;
       }
-      if (text === '}') { indent = Math.max(0, indent - 1); continue; }
+      if (text === '}') { indent = Math.max(0, indent - 1); output.push(''); continue; }
       const loop = language === 'java'
         ? text.match(/^for\s*\(\s*int\s+\w+\s*=\s*0\s*;\s*\w+\s*<\s*(\d+)\s*;\s*\w+\+\+\s*\)\s*\{$/)
         : language === 'javascript'
@@ -103,7 +109,7 @@
         text = text.replace(/^console\.log\((.*)\)$/, 'print($1)')
           .replace(/^(?:let|const|var)\s+([A-Za-z_]\w*)\s*=/, '$1 =');
       } else {
-        text = text.replace(/^echo\s+(.+)$/, 'print($1)').replace(/\$([A-Za-z_]\w*)/g, '$1');
+        text = text.replace(/^echo\s+(.+)$/, 'print($1)').replace(/^\$([A-Za-z_]\w*)\s*=/, '$1 =');
       }
       const assignment = text.match(/^([A-Za-z_]\w*)\s*=\s*(.*)$/);
       const print = text.match(/^print\((.*)\)$/);
@@ -122,7 +128,30 @@
       normalize(source) { return normalize(source, id); },
       parseExpression(source) { return python.parseExpression(normalizeExpression(source, id)); },
       evaluateExpression: python.evaluateExpression,
+      usedConstructs: python.usedConstructs,
       compile(source, context) {
+        const blockErrors = [];
+        const blocks = [];
+        let justClosed = null;
+        for (const [index, raw] of source.replace(/\r/g, '').split('\n').entries()) {
+          let text = raw.trim();
+          if (!text || text.startsWith('//')) continue;
+          if (text === '}' || /^}\s*else\s*{$/.test(text)) {
+            justClosed = blocks.pop();
+            if (!justClosed) blockErrors.push({ line: index + 1, text: '対応する開始の波かっこ { がありません' });
+            if (text === '}') continue;
+            text = text.slice(1).trim();
+          }
+          if (/^else\s*{$/.test(text)) {
+            if (justClosed?.kind !== 'if') blockErrors.push({ line: index + 1, text: 'elseに対応するifがありません' });
+            blocks.push({ kind: 'else', line: index + 1 });
+          } else if (/^(if|for)\s*\(.*\)\s*{$/.test(text)) {
+            blocks.push({ kind: text.startsWith('if') ? 'if' : 'for', line: index + 1 });
+          } else if (text.endsWith('{')) blockErrors.push({ line: index + 1, text: 'このブロック構文には対応していません' });
+          justClosed = null;
+        }
+        for (const block of blocks) blockErrors.push({ line: block.line, text: 'ブロックを閉じる波かっこ } が必要です' });
+        if (blockErrors.length) return { commands: [], errors: blockErrors };
         const invalidForErrors = source.replace(/\r/g, '').split('\n').flatMap((raw, index) => {
           const text = raw.trim();
           if (!/^for\s*\(/.test(text)) return [];
@@ -131,7 +160,8 @@
             : id === 'javascript'
               ? /^for\s*\(\s*let\s+\w+\s*=\s*0\s*;\s*\w+\s*<\s*\d+\s*;\s*\w+\+\+\s*\)\s*\{$/.test(text)
               : /^for\s*\(\s*\$\w+\s*=\s*0\s*;\s*\$\w+\s*<\s*\d+\s*;\s*\$\w+\+\+\s*\)\s*\{$/.test(text);
-          return valid ? [] : [{ line: index + 1, text: 'for文の初期値・条件・更新式を確認してください（例: 0から開始）' }];
+          const names = text.match(/\(\s*(?:int\s+|let\s+)?(\$?\w+)\s*=\s*0\s*;\s*(\$?\w+)\s*<\s*\d+\s*;\s*(\$?\w+)\+\+/);
+          return valid && names && names[1] === names[2] && names[2] === names[3] ? [] : [{ line: index + 1, text: 'for文の初期値・条件・更新式を確認してください（同じ変数で0から開始）' }];
         });
         const punctuationErrors = source.replace(/\r/g, '').split('\n').flatMap((raw, index) => {
           const text = raw.trim();

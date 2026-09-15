@@ -2,6 +2,7 @@
   "name": "code-garden-learning",
   "private": true,
   "scripts": {
-    "test": "node tests/levels.test.cjs && node tests/language-modes.test.cjs"
+    "test": "node tests/levels.test.cjs && node tests/language-modes.test.cjs && node tests/audit-regressions.test.cjs",
+    "test:browser": "node tests/browser-audit.cjs"
   }
 }

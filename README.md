@@ -34,11 +34,14 @@ PC版Chromeとスマートフォン版Chromeを対象にしています。スマ
 ```powershell
 node tests/levels.test.cjs
 node tests/language-modes.test.cjs
+node tests/audit-regressions.test.cjs
 node --check app.js
 node --check levels.js
 ```
 
 ブラウザ確認は、このフォルダで任意の静的HTTPサーバーを起動して `index.html` を開きます。
+
+PlaywrightとEdgeがある環境では `npm run test:browser` で実画面・全48階の実行を検証できます。検証範囲と残件は `docs/QUALITY_AUDIT_20260915.md`、最新の目的・制約は `LEARNING_APP_HANDOFF.md` を参照してください。4言語とも教材用簡易処理系であり、各言語の全仕様に互換な実行環境ではありません。
 
 ## GitHub接続のセットアップ（Windows）
 
