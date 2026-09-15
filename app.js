@@ -231,7 +231,7 @@ function selectFloor(floor, bypassUnlock = false) {
   prepareLevel(selectedLevel);
   const lesson = curriculum.find(item => item.floor === floor);
   const stageLabel = lesson?.stage ? `${lesson.chapter}-${lesson.stage}` : String(floor).padStart(2, '0');
-  document.querySelector('.chapter small').textContent = `${floor === 0 ? 'TUTORIAL' : `FLOOR ${floor}`} / WORLD ${lesson?.world || 1} STAGE ${stageLabel}`;
+  document.querySelector('.chapter small').textContent = `${floor === 0 ? 'TUTORIAL' : `FLOOR ${floor}`} · ${stageLabel}`;
   document.querySelector('.chapter strong').textContent = level().title;
   const referenceCapabilities = selectedLevel.referenceCapabilities || selectedLevel.capabilities;
   document.querySelectorAll('[data-capability]').forEach(button => { button.hidden = !referenceCapabilities.includes(button.dataset.capability); });
@@ -264,7 +264,7 @@ function selectFloor(floor, bypassUnlock = false) {
   document.querySelector('#lessonModal').classList.add('show');
   document.querySelector('#lessonModal').setAttribute('aria-hidden', 'false');
   updateLineNumbers();
-  resetState();
+  resetState(false);
 }
 
 function startAdventure(firstFloor, testMode = false) {
@@ -835,21 +835,37 @@ document.querySelector('#clearOutput').addEventListener('click', () => setOutput
 document.querySelector('#hintBtn').addEventListener('click', showNextHint);
 document.querySelector('#birdNameTitle').textContent = GAME.birdName;
 document.querySelector('#continueAdventure').hidden = loadProgress().cleared.length === 0;
+document.querySelector('.brand').addEventListener('click', event => {
+  event.preventDefault();
+  clearCard.classList.remove('show');
+  failCard.classList.remove('show');
+  document.querySelector('#lessonModal').classList.remove('show');
+  document.querySelector('#lessonModal').setAttribute('aria-hidden', 'true');
+  titleScreen.classList.remove('hidden');
+  document.documentElement.classList.add('title-active');
+  fitTitleToViewport();
+});
 document.querySelector('#startTutorial').addEventListener('click', () => startAdventure(0));
 document.querySelector('#continueAdventure').addEventListener('click', continueAdventure);
 document.querySelector('#skipTutorial').addEventListener('click', () => startAdventure(1, true));
+const debugUnlocked = new URLSearchParams(location.search).has('debug')
+  || ['localhost', '127.0.0.1'].includes(location.hostname);
+const testFloorPicker = document.querySelector('.test-floor-picker');
 const testFloorButtons = document.querySelector('#testFloorButtons');
-stageOrder.forEach((floor, index) => {
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.dataset.testFloor = floor;
-  const floorLabel = floor === 0 ? 'T' : String(floor);
-  button.textContent = floorLabel;
-  button.title = floor === 0 ? `Tutorial. ${levels[floor].title}` : `FLOOR ${floor}. ${levels[floor].title}`;
-  button.setAttribute('aria-label', floor === 0 ? `Tutorial：${levels[floor].title}` : `FLOOR ${floor}：${levels[floor].title}`);
-  button.addEventListener('click', () => startAdventure(floor, true));
-  testFloorButtons.appendChild(button);
-});
+testFloorPicker.hidden = !debugUnlocked;
+if (debugUnlocked) {
+  stageOrder.forEach((floor, index) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.dataset.testFloor = floor;
+    const floorLabel = floor === 0 ? 'T' : String(floor);
+    button.textContent = floorLabel;
+    button.title = floor === 0 ? `Tutorial. ${levels[floor].title}` : `FLOOR ${floor}. ${levels[floor].title}`;
+    button.setAttribute('aria-label', floor === 0 ? `Tutorial：${levels[floor].title}` : `FLOOR ${floor}：${levels[floor].title}`);
+    button.addEventListener('click', () => startAdventure(floor, true));
+    testFloorButtons.appendChild(button);
+  });
+}
 document.querySelector('#lessonStart').addEventListener('click', () => { document.querySelector('#lessonModal').classList.remove('show'); document.querySelector('#lessonModal').setAttribute('aria-hidden', 'true'); });
 editor.addEventListener('input', updateLineNumbers);
 editor.addEventListener('scroll', () => { lineNumbers.scrollTop = editor.scrollTop; });

@@ -256,7 +256,8 @@ assert.equal(/collectGet\(\)|goDown\(\)/.test(appSource), false, '廃止した�
 assert.equal(/for\\s\+_|range\\\(/.test(appSource), false, 'Python固有の構文解析をapp.jsに残さないでください');
 assert.match(appSource, /stageOrder\.forEach\(\(floor, index\)/, 'テスト用ステージ選択は教材データから自動生成します');
 assert.match(appSource, /function finishStepRun\(\)[\s\S]*?incompleteMessage\(\)/, '1行ずつ実行の終了時も未達成を判定します');
-assert.doesNotMatch(appSource, /testFloorPicker\.hidden\s*=\s*true/, '公開URLでもデバッグ用階層ピッカーを表示します');
-assert.match(appSource, /testFloorButtons\.appendChild\(button\)/, '全階層のデバッグボタンを常に生成します');
+assert.match(appSource, /searchParams\)\.has\('debug'\)/, '通常公開ではデバッグ階層を隠し、?debug=1 で出します');
+assert.match(appSource, /testFloorPicker\.hidden = !debugUnlocked/, '本番ホストではデバッグ用階層ピッカーを隠します');
+assert.match(appSource, /testFloorButtons\.appendChild\(button\)/, 'デバッグ時は全階層ボタンを生成します');
 assert.equal(/data-test-floor="\d+"/.test(fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8')), false, 'テスト用ステージをHTMLへ固定記述しないでください');
 console.log('全階層の模範解答・当たり判定・文言監査に合格しました');
