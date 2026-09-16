@@ -5,9 +5,13 @@ const appSource = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
 const htmlSource = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const stylesSource = fs.readFileSync(path.join(__dirname, '..', 'styles.css'), 'utf8');
 const titleSource = fs.readFileSync(path.join(__dirname, '..', 'title.css'), 'utf8');
+const titleLayoutFixSource = fs.readFileSync(path.join(__dirname, '..', 'title-layout-fix.css'), 'utf8');
 
 assert.match(titleSource, /pointer-events:none/, 'hidden title does not steal clicks');
 assert.match(titleSource, /z-index:200/, 'title stays above game chrome');
+assert.match(htmlSource, /title-layout-fix\.css/, 'title layout fix is loaded');
+assert.match(titleLayoutFixSource, /\.title-screen\s*\{[^}]*overflow:\s*hidden/s, 'title screen never shows an inner scrollbar');
+assert.match(titleLayoutFixSource, /transform:\s*scale\(var\(--title-scale,\s*1\)\)/, 'title menu scales to the viewport');
 assert.match(appSource, /inert/, 'game shell is inert on the title screen');
 assert.match(htmlSource, /role="tablist"/, 'mobile tabs expose tablist');
 assert.match(htmlSource, /aria-selected/, 'mobile tabs expose selected state');

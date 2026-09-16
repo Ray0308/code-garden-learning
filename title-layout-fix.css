@@ -1,0 +1,11 @@
+/* Keep the title menu visible as one unit on short displays. */
+.title-screen {
+  overflow: hidden;
+}
+
+.title-content {
+  max-height: none;
+  overflow: visible;
+  transform: scale(var(--title-scale, 1));
+  transform-origin: center center;
+}
